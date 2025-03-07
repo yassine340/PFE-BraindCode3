@@ -28,16 +28,16 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): Response
+    public function store(Request $request)
+
     {
-        // ✅ Validation des données reçues
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|string|email|max:255|unique:users,email',
             'password'      => ['required', 'confirmed', Rules\Password::defaults()],
             'phone'         => 'nullable|string|max:20',
-            'role'          => 'required|string|in:user,formateur,startup',  // Validation du rôle
+            'role'          => 'required|string|in:user,formateur,startup',
             'startup_name'  => 'nullable|string|max:255',
             'code_fiscal'   => 'nullable|string|max:50|unique:users,code_fiscal',
             'startup_email' => 'nullable|string|email|max:255|unique:users,startup_email',
@@ -45,8 +45,7 @@ class RegisteredUserController extends Controller
             'speciality'    => 'nullable|string|max:255',
             'description'   => 'nullable|string',
         ]);
-
-        // ✅ Création de l'utilisateur
+    
         $user = User::create([
             'first_name'    => $request->first_name,
             'last_name'     => $request->last_name,
@@ -60,27 +59,22 @@ class RegisteredUserController extends Controller
             'startup_phone' => $request->startup_phone,
             'speciality'    => $request->speciality,
             'description'   => $request->description,
-            'status'        => $request->role === 'formateur' ? 'en_attente' : null, // Statut "en attente" pour les formateurs
+            'status'        => $request->role === 'formateur' ? 'en_attente' : null,
         ]);
-
-        // ✅ Vérification d'email uniquement pour "user" et "startup"
+    
         if ($user->role !== 'formateur') {
-            // Événement d'enregistrement
             event(new Registered($user));
-
-            // Connexion automatique pour "user" et "startup"
             Auth::login($user);
-
-            // Redirection vers le tableau de bord
-            return redirect()->route('dashboard');
+    
+            // ✅ Redirection compatible avec Inertia.js
+            return Inertia::location(route('dashboard'));
         }
-
-        // ✅ Pour les formateurs, redirection vers la page de login avec un message
+    
         $request->session()->flash('message', 'Merci pour votre demande d\'inscription. Vous recevrez un email ou un SMS de réponse.');
-
-        // Retour avec Inertia vers la page de login, en passant le message
+    
         return Inertia::render('Auth/Login', [
             'message' => session('message')
         ]);
     }
+    
 }
