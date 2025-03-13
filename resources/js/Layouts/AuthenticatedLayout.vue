@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
@@ -7,8 +8,23 @@ import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link } from '@inertiajs/vue3';
 
-const showingNavigationDropdown = ref(false);
+// Récupérer les données de l'utilisateur depuis Inertia.js
+const page = usePage();
+const user = computed(() => page.props.auth.user); // Supposons que l'utilisateur est dans `auth.user`
+
+// Récupérer le rôle de l'utilisateur
+const role = computed(() => user.value?.role || 'user'); // Par défaut, 'user'
+
+// Déclarer la propriété réactive pour gérer l'état du menu dropdown
+const showingNavigationDropdown = ref(false); // Ajout de la ref pour la gestion du dropdown
+
+// Fonction pour basculer l'état du dropdown
+const toggleNavigationDropdown = () => {
+  showingNavigationDropdown.value = !showingNavigationDropdown.value;
+};
 </script>
+
+
 
 <template>
     <div>
@@ -29,23 +45,39 @@ const showingNavigationDropdown = ref(false);
                                 </Link>
                             </div>
 
-                            <!-- Navigation Links -->
-                       <!-- Navigation Links -->
-<div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-    <NavLink
-        :href="route('dashboard')"
-        :active="route().current('dashboard')"
-    >
-        Dashboard
-    </NavLink>
+                                <!-- Navigation Links -->
+                                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                                <!-- Si Formateur -->
+                                <template v-if="role === 'formateur'">
+                                    <NavLink :href="route('DashboardFormateur')" :active="route().current('DashboardFormateur')">
+                                        Dashboard Formateur
+                                    </NavLink>
+                                    <NavLink :href="route('upload.videos')" :active="route().current('upload.videos')">
+                                        Upload Vidéos
+                                    </NavLink>
+                                    <NavLink :href="route('afficher.videos')" :active="route().current('afficher.videos')">
+                                        Voir Vidéos
+                                    </NavLink>
+                                </template>
 
-    <!-- Nouveau lien vers Formateurs en attente -->
-    <NavLink
-        :href="route('formateur.en.attente')"
-        :active="route().current('formateur.en.attente')"
-    >
-        Formateurs en attente
-    </NavLink>
+                                <!-- Si Admin -->
+                                <template v-else-if="role === 'admin'">
+                                    <NavLink :href="route('DashboardAdmin')" :active="route().current('DashboardAdmin')">
+                                        Dashboard Administrateur
+                                    </NavLink>
+                               
+                                    <NavLink :href="route('formateur.en.attente')" :active="route().current('formateur.en.attente')">
+                                        Formateurs en attente
+                                    </NavLink>
+                                </template>
+
+                                <!-- Pour les autres utilisateurs -->
+                                <template v-else>
+                                    <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
+                                        Dashboard
+                                    </NavLink>
+                                </template>
+
 </div>
 
                         </div>

@@ -11,7 +11,7 @@ import Elearning from '@/Pages/Elearning.vue';
             <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
                 <!-- E-learning Page -->
                 <div class="mt-6">
-                    
+                    <h1>Hello administrateur</h1>
                 </div>
             </div>
         </div>

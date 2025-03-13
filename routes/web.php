@@ -6,6 +6,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\VideoController;
+use App\Http\Controllers\FormationController;
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -47,3 +50,31 @@ Route::get('/formateurs-en-attente', [AdminController::class, 'getFormateursEnAt
      // Valider un formateur
 Route::post('/formateurs/{id}/valider', [AdminController::class, 'validerFormateur'])->name('formateurs.valider');
 Route::post('/formateurs/{id}/rejeter', [AdminController::class, 'rejeterFormateur'])->name('formateurs.rejeter');
+Route::post('/upload-video', [VideoController::class, 'upload']);
+
+Route::get('/videos', [VideoController::class, 'getVideos']);
+Route::get('/upload-videos', function () {
+    return Inertia::render('upload_videos');
+})->name('upload.videos');
+Route::get('/afficher-videos', function () {
+    return Inertia::render('afficher_videos');
+})->name('afficher.videos');
+Route::get('/DashboardAdmin', function () {
+    return Inertia::render('DashboardAdmin');
+})->name('DashboardAdmin');
+Route::get('/DashboardFormateur', function () {
+    return Inertia::render('DashboardFormateur');
+})->name('DashboardFormateur');
+
+// Afficher toutes les formations (index)
+Route::get('/formations', [FormationController::class, 'index'])->name('formations.index');
+
+// Afficher le formulaire de création d'une formation
+Route::get('/formations/create', function () {
+    return Inertia::render('Create');
+})->name('formations.create');
+
+// Créer une nouvelle formation (POST)
+Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
+Route::get('/formations/index', [FormationController::class, 'index'])->name('formations.index');
+Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');

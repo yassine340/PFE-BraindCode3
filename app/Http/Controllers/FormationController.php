@@ -4,15 +4,30 @@ namespace App\Http\Controllers;
 
 use App\Models\Formation;
 use Illuminate\Http\Request;
-
+use Inertia\Inertia; // N'oublie pas d'importer Inertia
+use Illuminate\Support\Facades\Storage;
 class FormationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+       // 📌 Fonction pour afficher toutes les formations
+       public function index()
+       {
+           $formations = Formation::select('id', 'titre', 'image_formation')->get();
+           
+           return Inertia::render('Formations/Index', [
+               'formations' => $formations
+           ]);
+       }
+       // 📌 Fonction pour afficher les vidéos d'une formation
+    public function show($id)
     {
-        //
+        $formation = Formation::with('videos')->findOrFail($id);
+
+        return Inertia::render('Formations/Show', [
+            'formation' => $formation
+        ]);
     }
 
     /**
@@ -20,24 +35,86 @@ class FormationController extends Controller
      */
     public function create()
     {
-        //
+        // Retourne la vue de création de formation
+        return Inertia::render('Formations/Create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Créer une nouvelle formation.
      */
     public function store(Request $request)
     {
-        //
-    }
+        $request->validate([
+            'titre' => 'required|string|max:255',
+            'prix' => 'required|numeric',
+            'estcertifiante' => 'required|boolean',
+            'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv', // Validation pour plusieurs vidéos
+            'videos.*.titre' => 'nullable|string|max:255',
+        ]);
+    
+        if ($request->hasFile('image_formation')) {
+            $imageName = time() . '_' . $request->file('image_formation')->getClientOriginalName();
+            $imagePath = $request->file('image_formation')->storeAs('formations', $imageName, 'public');
+        } else {
+            $imagePath = null;
+        }
+        
+        // Création de la formation
+        $formation = Formation::create([
+            'titre' => $request->titre,
+            'prix' => $request->prix,
+            'estcertifiante' => $request->estcertifiante,
+            'image_formation' => $imagePath,
+        ]);
+    
+        if ($request->has('videos')) {
+            foreach ($request->videos as $videoData) {
+                if (isset($videoData['file'])) {
+                    // Récupérer le nom original et ajouter un timestamp pour éviter les doublons
+                    $videoName = time() . '_' . $videoData['file']->getClientOriginalName();
+                    $videoPath = $videoData['file']->storeAs('videos', $videoName, 'public');
+        
+                    $formation->videos()->create([
+                        'titre' => $videoData['titre'] ?? 'Sans titre',
+                        'url' => Storage::url($videoPath),
+                    ]);
+                }
+            }
+        }
+        
+    
+        return Inertia::render('Create', [
+            'message' => 'Formation créée avec succès',
+            'formation' => $formation
+        ]);
+            }
+    
+
+private function uploadVideo($video)
+{
+    $fileName = time() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $video->getClientOriginalName());
+
+    // Stocker la vidéo
+    $path = $video->storeAs('videos', $fileName, 'public');
+
+    return [
+        'message' => 'Vidéo uploadée avec succès !',
+        'url' => Storage::url($path)
+    ];
+}
+
+    
+    
+    
 
     /**
      * Display the specified resource.
      */
-    public function show(Formation $formation)
+   /* public function show(Formation $formation)
     {
         //
-    }
+    }*/
 
     /**
      * Show the form for editing the specified resource.

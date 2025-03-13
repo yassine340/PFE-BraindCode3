@@ -5,19 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Formation extends Model
+class Video extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'titre',
-        'prix',
-        'estcertifiante',
-        'image_formation',
+        'url',
+        'formation_id',
     ];
 
-    public function videos()
+    public function formation()
     {
-        return $this->hasMany(Video::class);
+        return $this->belongsTo(Formation::class);
     }
 }

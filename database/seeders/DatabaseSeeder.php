@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             'last_name' => 'Chargui',
             'email' => 'fakhri.chargui37@gmail.com',
             'password' => bcrypt('20855016'),
+            'role'=>'admin'
         ]);
 
         // Attach role to user

@@ -19,7 +19,7 @@ class AuthenticatedSessionController extends Controller
     public function create(): Response
     {
         return Inertia::render('Auth/Login', [
-            'canResetPassword' => Route::has('password.request'),
+            'canResetPassword' => route('password.request') ? true : false,
             'status' => session('status'),
         ]);
     }
@@ -31,55 +31,61 @@ class AuthenticatedSessionController extends Controller
     {
         // Authentifier l'utilisateur
         $request->authenticate();
-    
+
         // Régénérer la session pour des raisons de sécurité
         $request->session()->regenerate();
-    
+
         // Obtenir l'utilisateur actuellement authentifié
         $user = Auth::user();
-    
+
         // Vérifier si l'utilisateur est un formateur avec le statut "en_attente"
         if ($user->role === 'formateur' && $user->status === 'en_attente') {
             // Déconnecter immédiatement l'utilisateur
             Auth::logout();
-    
+
             // Invalider la session
             $request->session()->invalidate();
             $request->session()->regenerateToken();
-    
+
             // Rediriger vers la page de connexion avec un message d'erreur
             return redirect()->route('login')->withErrors([
                 'email' => 'Votre compte est en attente de validation par l\'administrateur.',
             ]);
         }
-    
+
+        // Ajouter le rôle à la session
+        session(['role' => $user->role]);
+
         // Vérifier le rôle de l'utilisateur et rediriger en conséquence
         if ($user->role === 'admin') {
-            return redirect()->route('dashboardAdmin'); // Redirige vers le dashboard des administrateurs
+            return redirect()->route('dashboardAdmin');
         } elseif ($user->role === 'formateur') {
-            return redirect()->route('DashboardFormateur'); // Redirige vers le dashboard des formateurs
+            return redirect()->route('DashboardFormateur');
         }
-    
-        // Par défaut, rediriger vers le dashboard général
+
         return redirect()->route('dashboard');
     }
-    
 
     /**
-     * Détruire la session authentifiée.
+     * Déconnecte l'utilisateur et détruit la session.
      */
     public function destroy(Request $request): RedirectResponse
     {
-        // Déconnexion de l'utilisateur
         Auth::guard('web')->logout();
-
-        // Invalider la session pour des raisons de sécurité
         $request->session()->invalidate();
-
-        // Régénérer le token CSRF pour des raisons de sécurité
         $request->session()->regenerateToken();
 
-        // Rediriger vers la page d'accueil après la déconnexion
         return redirect('/');
+    }
+
+    /**
+     * Récupère les informations de l'utilisateur authentifié.
+     */
+    public function user(): Response
+    {
+        return Inertia::render('Dashboard', [
+            'user' => Auth::user(),
+            'role' => Auth::user() ? Auth::user()->role : null,
+        ]);
     }
 }

@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('formations', function (Blueprint $table) {
             $table->id();
-            $table->string('titre');
-            $table->double('prix');
-            $table->boolean('estcertifiante');
+            $table->string('titre')->nullable();
+            $table->double('prix')->nullable();
+            $table->boolean('estcertifiante')->nullable();
+            $table->string('image_formation')->nullable(); 
             $table->timestamps();
         });
     }
