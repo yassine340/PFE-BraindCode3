@@ -57,6 +57,39 @@ public function rejeterFormateur(Request $request, $id)
     return response()->json(['message' => 'Formateur rejeté et email de rejet envoyé avec succès.']);
 }
 
+public function Listeformateur()
+    {
+        $formateurs = User::where('role', 'formateur')
+        ->where('status', 'valide')
+        ->get();
+        return Inertia::render('ListeFormateur', [
+            'formateurs' => $formateurs
+        ]);
+    }
+public function deleteFormateur($id)
+{
+    $formateur = User::findOrFail($id);
+    $formateur->delete();
+    return response()->json([
+        'message' => 'Formateur supprimé avec succès.'
+    ]);
+}
+
+public function detailsFormateur($id)
+{
+    $formateur = User::findOrFail($id);
+    return Inertia::render('DetailsFormateur', [
+        'formateur' => $formateur
+    ]);
+}
+public function modifierFormateur(Request $request, $id)
+{
+    $formateur = User::findOrFail($id);
+    $formateur->update($request->all());
+    return response()->json([
+        'message' => 'Formateur modifié avec succès.'
+    ]);
+}
 
 
     

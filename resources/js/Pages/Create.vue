@@ -1,61 +1,77 @@
 <template>
-    <Head title="Créer une nouvelle formation" />
-    <AuthenticatedLayout>
-      <div class="py-12">
-        <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div class="mt-6 p-8 bg-white rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4">Créer une nouvelle formation</h2>
-            <form @submit.prevent="submitForm">
+  <Head title="Créer une nouvelle formation" />
+  <AuthenticatedLayout>
+    <div class="py-12">
+      <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div class="mt-6 p-8 bg-white rounded-xl shadow-lg">
+          <h2 class="text-2xl font-semibold mb-4">Créer une nouvelle formation</h2>
+          <form @submit.prevent="submitForm">
+
+            <!-- Champ Titre -->
+            <div class="mb-4">
+              <label for="titre" class="block text-sm font-medium text-gray-700">Titre</label>
+              <input type="text" v-model="titre" id="titre" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required />
+            </div>
+            
+            <!-- Champ Prix -->
+            <div class="mb-4">
+              <label for="prix" class="block text-sm font-medium text-gray-700">Prix</label>
+              <input type="number" v-model="prix" id="prix" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required />
+            </div>
+    
+            <!-- Formation Certifiante -->
+            <div class="mb-4 flex items-center">
+              <label for="estcertifiante" class="mr-2 text-sm font-medium text-gray-700">Formation certifiante</label>
+              <input type="checkbox" v-model="estcertifiante" id="estcertifiante" />
+            </div>
+    
+            <!-- Image de Formation -->
+            <div class="mb-4">
+              <label for="image_formation" class="block text-sm font-medium text-gray-700">Image de la formation</label>
+              <input type="file" @change="handleImageUpload" id="image_formation" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+            </div>
+
+            <!-- Champ Vidéos -->
+            <div v-for="(video, index) in videos" :key="index" class="mb-4 border p-4 rounded-md bg-gray-100">
+              <label :for="'video_' + index" class="block text-sm font-medium text-gray-700">Vidéo {{ index + 1 }}</label>
+              <input type="file" @change="handleVideoUpload($event, index)" :id="'video_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
               
-              <!-- Champ Titre -->
-              <div class="mb-4">
-                <label for="titre" class="block text-sm font-medium text-gray-700">Titre</label>
-                <input type="text" v-model="titre" id="titre" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required />
-              </div>
+              <label :for="'video_titre_' + index" class="block text-sm font-medium text-gray-700 mt-2">Titre de la Vidéo</label>
+              <input type="text" v-model="video.titre" :id="'video_titre_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
               
-              <!-- Champ Prix -->
-              <div class="mb-4">
-                <label for="prix" class="block text-sm font-medium text-gray-700">Prix</label>
-                <input type="number" v-model="prix" id="prix" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" required />
-              </div>
+              <button type="button" @click="removeVideo(index)" class="mt-2 text-red-500">Supprimer</button>
+            </div>
+
+            <!-- Bouton Ajouter une vidéo -->
+            <button type="button" @click="addVideo" class="mb-4 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600">
+              + Ajouter une vidéo
+            </button>
+
+            <!-- Champ Documents -->
+            <div v-for="(document, index) in documents" :key="index" class="mb-4 border p-4 rounded-md bg-gray-100">
+              <label :for="'document_' + index" class="block text-sm font-medium text-gray-700">Document {{ index + 1 }}</label>
+              <input type="file" @change="handleDocumentUpload($event, index)" :id="'document_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+              
+              <label :for="'document_titre_' + index" class="block text-sm font-medium text-gray-700 mt-2">Titre du Document</label>
+              <input type="text" v-model="document.titre" :id="'document_titre_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
+              
+              <button type="button" @click="removeDocument(index)" class="mt-2 text-red-500">Supprimer</button>
+            </div>
+
+            <!-- Bouton Ajouter un document -->
+            <button type="button" @click="addDocument" class="mb-4 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600">
+              + Ajouter un document
+            </button>
       
-              <!-- Formation Certifiante -->
-              <div class="mb-4 flex items-center">
-                <label for="estcertifiante" class="mr-2 text-sm font-medium text-gray-700">Formation certifiante</label>
-                <input type="checkbox" v-model="estcertifiante" id="estcertifiante" />
-              </div>
-      
-              <!-- Image de Formation -->
-              <div class="mb-4">
-                <label for="image_formation" class="block text-sm font-medium text-gray-700">Image de la formation</label>
-                <input type="file" @change="handleImageUpload" id="image_formation" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
-              </div>
-  
-              <!-- Champ Vidéos -->
-              <div v-for="(video, index) in videos" :key="index" class="mb-4 border p-4 rounded-md bg-gray-100">
-                <label :for="'video_' + index" class="block text-sm font-medium text-gray-700">Vidéo {{ index + 1 }}</label>
-                <input type="file" @change="handleVideoUpload($event, index)" :id="'video_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
-                
-                <label :for="'video_titre_' + index" class="block text-sm font-medium text-gray-700 mt-2">Titre de la Vidéo</label>
-                <input type="text" v-model="video.titre" :id="'video_titre_' + index" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
-                
-                <button type="button" @click="removeVideo(index)" class="mt-2 text-red-500">Supprimer</button>
-              </div>
-  
-              <!-- Bouton Ajouter une vidéo -->
-              <button type="button" @click="addVideo" class="mb-4 py-2 px-4 bg-green-500 text-white rounded-md hover:bg-green-600">
-                + Ajouter une vidéo
-              </button>
-      
-              <!-- Bouton Soumettre -->
-              <button type="submit" class="mt-6 w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">Soumettre</button>
-            </form>
-          </div>
+            <!-- Bouton Soumettre -->
+            <button type="submit" class="mt-6 w-full py-2 px-4 bg-blue-500 text-white rounded-md hover:bg-blue-600">Soumettre</button>
+          </form>
         </div>
       </div>
-    </AuthenticatedLayout>
+    </div>
+  </AuthenticatedLayout>
 </template>
-  
+
 <script setup>
 import { ref } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
@@ -68,6 +84,7 @@ const prix = ref('');
 const estcertifiante = ref(false);
 const image_formation = ref(null);
 const videos = ref([]); // Tableau contenant les vidéos et leurs titres
+const documents = ref([]); // Tableau contenant les documents et leurs titres
 
 // Ajouter un nouveau champ vidéo
 const addVideo = () => {
@@ -79,6 +96,16 @@ const removeVideo = (index) => {
   videos.value.splice(index, 1);
 };
 
+// Ajouter un nouveau champ document
+const addDocument = () => {
+  documents.value.push({ file: null, titre: '' });
+};
+
+// Supprimer un document
+const removeDocument = (index) => {
+  documents.value.splice(index, 1);
+};
+
 // Gérer l'upload de l'image
 const handleImageUpload = (e) => {
   image_formation.value = e.target.files[0];
@@ -87,6 +114,11 @@ const handleImageUpload = (e) => {
 // Gérer l'upload des vidéos
 const handleVideoUpload = (e, index) => {
   videos.value[index].file = e.target.files[0];
+};
+
+// Gérer l'upload des documents
+const handleDocumentUpload = (e, index) => {
+  documents.value[index].file = e.target.files[0];
 };
 
 // Fonction pour soumettre le formulaire
@@ -107,6 +139,16 @@ const submitForm = () => {
     }
     if (video.titre) {
       formData.append(`videos[${index}][titre]`, video.titre);
+    }
+  });
+
+  // Ajouter plusieurs documents
+  documents.value.forEach((document, index) => {
+    if (document.file) {
+      formData.append(`documents[${index}][file]`, document.file);
+    }
+    if (document.titre) {
+      formData.append(`documents[${index}][titre]`, document.titre);
     }
   });
 

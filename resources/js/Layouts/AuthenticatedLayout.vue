@@ -58,6 +58,12 @@ const toggleNavigationDropdown = () => {
                                     <NavLink :href="route('afficher.videos')" :active="route().current('afficher.videos')">
                                         Voir Vidéos
                                     </NavLink>
+                                    <NavLink 
+                                        :href="route('formation.list')" 
+                                        :active="route().current('formation.list')"
+                                    >
+                                        Formations
+                                    </NavLink>
                                 </template>
 
                                 <!-- Si Admin -->
@@ -68,6 +74,15 @@ const toggleNavigationDropdown = () => {
                                
                                     <NavLink :href="route('formateur.en.attente')" :active="route().current('formateur.en.attente')">
                                         Formateurs en attente
+                                    </NavLink>
+                                    <NavLink :href="route('formateur.list')" :active="route().current('formateur.list')">
+                                        Formateurs
+                                    </NavLink>
+                                    <NavLink 
+                                        :href="route('formations.index')" 
+                                        :active="route().current('formations.index')"
+                                    >
+                                        Formations
                                     </NavLink>
                                 </template>
 
