@@ -29,15 +29,15 @@
           <ul v-if="formation.documents && formation.documents.length" class="space-y-4">
             <li v-for="(document, index) in formation.documents" :key="index" class="bg-gray-100 p-4 rounded-lg shadow-md hover:bg-gray-200 transition duration-200">
               <h3 class="text-xl font-semibold text-gray-800">{{ document.titre }}</h3>
-  
+              <p>{{document.file}}</p>
               <!-- Check if document.file is defined before creating the download link -->
               <a v-if="document.file" :href="`/storage/${document.file}`" target="_blank" class="text-blue-600 hover:text-blue-800 underline mt-2 inline-block">Télécharger le document</a>
               <p v-else class="text-red-500 mt-2">Document non disponible.</p>
             </li>
           </ul>
+          
           <p v-else class="text-gray-500">Aucun document disponible.</p>
         </div>
-  
         <div class="text-center">
           <Link href="/formations" class="text-lg font-semibold text-blue-600 hover:text-blue-800 underline">Retour aux formations</Link>
         </div>

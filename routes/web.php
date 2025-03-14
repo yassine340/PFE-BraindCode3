@@ -8,6 +8,8 @@ use App\Http\Controllers\FacebookController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\FormationController;
+use App\Http\Controllers\DocumentController;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -51,7 +53,7 @@ Route::get('/formateurs-en-attente', [AdminController::class, 'getFormateursEnAt
 Route::post('/formateurs/{id}/valider', [AdminController::class, 'validerFormateur'])->name('formateurs.valider');
 Route::post('/formateurs/{id}/rejeter', [AdminController::class, 'rejeterFormateur'])->name('formateurs.rejeter');
 Route::post('/upload-video', [VideoController::class, 'upload']);
-
+//video
 Route::get('/videos', [VideoController::class, 'getVideos']);
 Route::get('/upload-videos', function () {
     return Inertia::render('upload_videos');
@@ -59,6 +61,11 @@ Route::get('/upload-videos', function () {
 Route::get('/afficher-videos', function () {
     return Inertia::render('afficher_videos');
 })->name('afficher.videos');
+//document
+Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+Route::get('/documents/{formation_id}', [DocumentController::class, 'getDocuments'])->name('documents.get');
+Route::get('/documents', [DocumentController::class, 'getAllDocuments'])->name('documents.all');
+
 Route::get('/DashboardAdmin', function () {
     return Inertia::render('DashboardAdmin');
 })->name('DashboardAdmin');
@@ -66,7 +73,13 @@ Route::get('/DashboardFormateur', function () {
     return Inertia::render('DashboardFormateur');
 })->name('DashboardFormateur');
 
+// Afficher toutes les formations (index)
+Route::get('/formations', [FormationController::class, 'index'])->name('formations.index');
 
+// Afficher le formulaire de création d'une formation
+Route::get('/formations/create', function () {
+    return Inertia::render('Create');
+})->name('formations.create');
 
 // Créer une nouvelle formation (POST)
 Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
@@ -76,10 +89,3 @@ Route::get('/formations/{id}', [FormationController::class, 'show'])->name('form
 // Afficher le formulaire de modification d'une formateurs
 Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formateur.list');
 Route::delete('/formateurs/{id}', [AdminController::class, 'deleteFormateur'])->name('formateur.delete');
-// Afficher toutes les formations (index)
-Route::get('/formations', [FormationController::class, 'index'])->name('formations.index');
-
-// Afficher le formulaire de création d'une formation
-Route::get('/formations/create', function () {
-    return Inertia::render('Create');
-})->name('formations.create');
