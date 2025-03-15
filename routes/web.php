@@ -62,9 +62,20 @@ Route::get('/afficher-videos', function () {
     return Inertia::render('afficher_videos');
 })->name('afficher.videos');
 //document
-Route::post('/documents/upload', [DocumentController::class, 'upload'])->name('documents.upload');
-Route::get('/documents/{formation_id}', [DocumentController::class, 'getDocuments'])->name('documents.get');
-Route::get('/documents', [DocumentController::class, 'getAllDocuments'])->name('documents.all');
+Route::prefix('documents')->group(function () {
+    // Add a method for the root route, for example 'index'
+    Route::get('/', [DocumentController::class, 'index'])->name('documents.index'); // Show a list of documents or something
+    Route::get('/show', [DocumentController::class, 'showFiles'])->name('documents.list');
+    Route::get('/documents/{url}', [DocumentController::class, 'download'])->name('documents.download');
+
+
+    Route::get('/upload', function () {
+        return view('documents.upload');
+    })->name('documents.uploadPage');
+    Route::post('/upload', [DocumentController::class, 'upload'])->name('documents.upload');
+});
+
+
 
 Route::get('/DashboardAdmin', function () {
     return Inertia::render('DashboardAdmin');

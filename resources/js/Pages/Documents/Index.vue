@@ -34,7 +34,7 @@ onMounted(async () => {
             <td class="border px-4 py-2">{{ document.titre }}</td>
             <td class="border px-4 py-2">
               <!-- Link to download the document -->
-              <a :href="'/storage/' + document.url" target="_blank" class="text-blue-600 underline">Download</a>
+              <a :href="`/storage/${document.url}`" target="_blank" class="text-blue-600 underline">Download</a>
             </td>
           </tr>
         </tbody>
