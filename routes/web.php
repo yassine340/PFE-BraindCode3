@@ -61,22 +61,21 @@ Route::get('/upload-videos', function () {
 Route::get('/afficher-videos', function () {
     return Inertia::render('afficher_videos');
 })->name('afficher.videos');
-//document
-Route::prefix('documents')->group(function () {
-    // Add a method for the root route, for example 'index'
-    Route::get('/', [DocumentController::class, 'index'])->name('documents.index'); // Show a list of documents or something
-    Route::get('/show', [DocumentController::class, 'showFiles'])->name('documents.list');
-    Route::get('/documents/{url}', [DocumentController::class, 'download'])->name('documents.download');
+// Route pour stocker un document
+Route::post('/document/store', [DocumentController::class, 'store'])->name('document.store');
+
+//********************************************************************************************** */
+Route::get('/document-upload', function () {
+    return Inertia::render('UploadDocument');
+})->name('document-upload');
+// Route pour afficher la liste des documents, avec les données envoyées par le contrôleur
+Route::get('/document-list', [DocumentController::class, 'index'])->name('document-list');
+
+// Route pour récupérer les documents via le contrôleur
+Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
 
 
-    Route::get('/upload', function () {
-        return view('documents.upload');
-    })->name('documents.uploadPage');
-    Route::post('/upload', [DocumentController::class, 'upload'])->name('documents.upload');
-});
-
-
-
+//************************************************************************************************* */
 Route::get('/DashboardAdmin', function () {
     return Inertia::render('DashboardAdmin');
 })->name('DashboardAdmin');
@@ -92,11 +91,12 @@ Route::get('/formations/create', function () {
     return Inertia::render('Create');
 })->name('formations.create');
 
+
 // Créer une nouvelle formation (POST)
 Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
 Route::get('/formations/index', [FormationController::class, 'index'])->name('formations.index');
 Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');
 
 // Afficher le formulaire de modification d'une formateurs
-Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formateur.list');
+Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formation.list');
 Route::delete('/formateurs/{id}', [AdminController::class, 'deleteFormateur'])->name('formateur.delete');

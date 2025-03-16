@@ -51,8 +51,6 @@ class FormationController extends Controller
             'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
             'videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv', // Validation pour plusieurs vidéos
             'videos.*.titre' => 'nullable|string|max:255',
-            'documents.*.file' => 'nullable|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx|max:5000', // max 5MB for documents
-            'documents.*.titre' => 'nullable|string|max:255',
         ]);
     
         if ($request->hasFile('image_formation')) {
@@ -84,20 +82,7 @@ class FormationController extends Controller
                 }
             }
         }
-        if($request->has('documents')) {
-            foreach ($request->documents as $documentData) {
-                if (isset($documentData['file'])) {
-                    // Récupérer le nom original et ajouter un timestamp pour éviter les doublons
-                    $documentName = time() . '_' . $documentData['file']->getClientOriginalName();
-                    $documentPath = $documentData['file']->storeAs('documents', $documentName, 'public');
         
-                    $formation->documents()->create([
-                        'titre' => $documentData['titre'] ?? 'Sans titre',
-                        'url' => Storage::url($documentPath),
-                    ]);
-                }
-            }
-        }
     
         return Inertia::render('Create', [
             'message' => 'Formation créée avec succès',
@@ -119,15 +104,7 @@ private function uploadVideo($video)
     ];
 }
 
-public function uploafdocumet($document)
-{
-    $fileName = time() . '_' . preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $document->getClientOriginalName());
-    $path = $document->storeAs('documents', $fileName, 'public');
-    return [
-        'message' => 'Document uploadé avec succès !',
-        'url' => Storage::url($path)
-    ];
-}
+    
     
     
 

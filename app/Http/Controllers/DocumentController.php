@@ -7,38 +7,47 @@ use App\Models\Document;
 use Illuminate\Support\Facades\Storage;
 use PHPUnit\Util\Http\Downloader;
 use Illuminate\Support\Facades\Response;
-
+use Inertia\Inertia; 
 class DocumentController extends Controller
 {
-    public function upload(Request $request)
-{
-    // Validate the request
-    $request->validate([
-        'titre' => 'required|string|max:255',
-        'document' => 'required|file|mimes:pdf,docx,jpg,png|max:10240', // Adjust the MIME types and max size as needed
-    ]);
+    public function store(Request $request)
+    {
+        $request->validate([
+            'titre' => 'required|string|max:255', // Vous avez probablement besoin d'un titre
+            'document' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,txt', // Validation des types de fichier
+        ]);
 
-    // Get the uploaded file
-    $file = $request->file('document');
+        if ($request->hasFile('document')) {
+            $documentName = time() . '_' . $request->file('document')->getClientOriginalName();
+            $documentPath = $request->file('document')->storeAs('documents', $documentName, 'public');
+        } else {
+            return response()->json(['message' => 'Aucun fichier téléchargé'], 400);
+        }
 
-    // Generate a unique filename using current timestamp
-    $filename = time() . '.' . $file->getClientOriginalExtension();
+        $document = Document::create([
+            'titre' => $request->titre,
+            'url' => Storage::url($documentPath),
+        ]);
 
-    // Move the file to the 'public/documents' folder
-    $file->move(public_path('documents'), $filename);
-
-    // Create a new document record
-    $document = new Document();
-    $document->titre = $request->titre;
-    $document->url = 'documents/' . $filename;  // Store the relative file path
-    $document->save();
-
-    // Return a success response
-    return response()->json(['success' => 'Document uploaded successfully']);
-}
-
+        return response()->json(['message' => 'Document téléchargé avec succès', 'document' => $document]);
+    }
     
 
+    
+    public function index()
+    {
+        // Récupérer tous les documents
+        $documents = Document::all();
+    
+        // Retourner la vue avec les documents
+        return Inertia::render('DocumentList', [
+            'documents' => $documents->toArray(), // Conversion en tableau
+        ]);
+    }
+    
+    
+
+    
 public function showFiles()
 {
     $data = Document::all(); // Retrieve all documents from the database
