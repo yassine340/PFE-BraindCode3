@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('titre')->nullable(); // Nom de la vidéo
             $table->string('url')->nullable(); // Chemin ou URL de la vidéo stockée
-            $table->foreignId('formation_id')->constrained()->onDelete('cascade')->nullable(); // Relation avec formations
+            $table->foreignId('lecon_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

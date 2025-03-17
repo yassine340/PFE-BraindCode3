@@ -17,5 +17,9 @@ class Module extends Model
     public function formation()
     {
         return $this->belongsTo(Formation::class);
-    }   
+    }
+    public function lecons()
+    {
+        return $this->hasMany(Lecon::class);
+    }
 }

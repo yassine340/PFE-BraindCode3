@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('titre')->nullable(); // Document title
             $table->string('url')->nullable(); // File path or URL
-            $table->foreignId('formation_id')->nullable()->constrained()->onDelete('cascade'); // Relation with formations
+            $table->foreignId('lecon_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

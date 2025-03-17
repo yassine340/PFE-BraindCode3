@@ -37,7 +37,7 @@ class DocumentController extends Controller
     public function index()
     {
         // Récupérer tous les documents
-        $documents = Document::all();
+        $documents= Document::all();
     
         // Retourner la vue avec les documents
         return Inertia::render('DocumentList', [

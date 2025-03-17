@@ -12,11 +12,11 @@ class Video extends Model
     protected $fillable = [
         'titre',
         'url',
-        'formation_id',
+        'lecon_id',
     ];
 
-    public function formation()
+    public function lecon()
     {
-        return $this->belongsTo(Formation::class);
+        return $this->belongsTo(Lecon::class);
     }
 }

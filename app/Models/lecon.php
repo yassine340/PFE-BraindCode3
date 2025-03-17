@@ -17,4 +17,12 @@ class Lecon extends Model
     {
         return $this->belongsTo(Module::class);
     }
+    public function videos()
+    {
+        return $this->hasMany(Video::class);
+    }
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
 }

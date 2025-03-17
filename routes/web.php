@@ -91,12 +91,15 @@ Route::get('/formations/create', function () {
     return Inertia::render('Create');
 })->name('formations.create');
 
-
 // Créer une nouvelle formation (POST)
 Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
 Route::get('/formations/index', [FormationController::class, 'index'])->name('formations.index');
 Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');
+Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name('formations.destroy');
+Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name('formations.edit');
+Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
+
 
 // Afficher le formulaire de modification d'une formateurs
-Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formation.list');
+Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formateur.list');
 Route::delete('/formateurs/{id}', [AdminController::class, 'deleteFormateur'])->name('formateur.delete');

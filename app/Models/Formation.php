@@ -16,12 +16,12 @@ class Formation extends Model
         'image_formation',
     ];
 
-    public function videos()
+    public function modules()
     {
-        return $this->hasMany(Video::class);
+        return $this->hasMany(Module::class);
     }
-    public function documents()
+    public function lecons()
     {
-        return $this->hasMany(Document::class);
+        return $this->hasMany(Lecon::class);
     }
 }
