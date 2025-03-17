@@ -1,6 +1,6 @@
 <script setup>
 import { defineProps, ref } from "vue";
-import { Head } from "@inertiajs/vue3";
+import { Head, router } from "@inertiajs/vue3";
 import axios from "axios";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
@@ -8,19 +8,17 @@ const props = defineProps({
   formateurs: Array
 });
 
-// Liste réactive pour mettre à jour l'affichage après suppression
+// Liste réactive pour mise à jour après suppression
 const formateursList = ref(props.formateurs);
 
 // Fonction pour afficher les détails d'un formateur
-const DetailsFormateur = (id) => {
-  alert(`Affichage des détails du formateur ID: ${id}`);
-  // Redirection ou affichage des détails selon l'implémentation souhaitée
+const detailsFormateur = (id) => {
+  router.visit(`/formateurs/${id}`);
 };
 
 // Fonction pour modifier un formateur
-const Modifier = (id) => {
-  alert(`Modification du formateur ID: ${id}`);
-  // Redirection vers la page de modification ou affichage d'un formulaire
+const modifierFormateur = (id) => {
+  router.visit(`/formateurs/${id}/edit`);
 };
 
 // Fonction pour supprimer un formateur
@@ -37,6 +35,7 @@ const deleteFormateur = async (id) => {
   }
 };
 </script>
+
 
 <template>
   <Head title="Liste des formateurs" />

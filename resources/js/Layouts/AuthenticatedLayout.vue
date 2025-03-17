@@ -22,6 +22,25 @@ const showingNavigationDropdown = ref(false); // Ajout de la ref pour la gestion
 const toggleNavigationDropdown = () => {
   showingNavigationDropdown.value = !showingNavigationDropdown.value;
 };
+// State for search query
+const searchQuery = ref("");
+const allItems = ref([
+  { name: "Dashboard Formateur", route: "DashboardFormateur" },
+  { name: "Upload Vidéos", route: "upload.videos" },
+  { name: "Voir Vidéos", route: "afficher.videos" },
+  { name: "Formations", route: "formation.list" },
+  { name: "Dashboard Administrateur", route: "DashboardAdmin" },
+  { name: "Formateurs en attente", route: "formateur.en.attente" },
+  { name: "Formateurs", route: "formateurs.index" },
+  { name: "Formations Admin", route: "formations.index" }
+]);
+
+// Computed property to filter items based on search query
+const filteredItems = computed(() => {
+  return allItems.value.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+  );
+});
 </script>
 
 
@@ -75,7 +94,7 @@ const toggleNavigationDropdown = () => {
                                     <NavLink :href="route('formateur.en.attente')" :active="route().current('formateur.en.attente')">
                                         Formateurs en attente
                                     </NavLink>
-                                    <NavLink :href="route('formateur.list')" :active="route().current('formateur.list')">
+                                    <NavLink :href="route('formateurs.index')" :active="route().current('formateurs.index')">
                                         Formateurs
                                     </NavLink>
                                     <NavLink 
@@ -92,11 +111,27 @@ const toggleNavigationDropdown = () => {
                                         Dashboard
                                     </NavLink>
                                 </template>
-
-</div>
-
+                            </div>
                         </div>
-
+                        <!-- Search bar -->
+                        <span class="flex items-center">
+                            <div class="relative">
+                                <input
+                                    type="text"
+                                    v-model="searchQuery"
+                                    placeholder="Rechercher..."
+                                    class="px-3 py-2 border rounded-lg w-64 focus:ring focus:ring-blue-300"
+                                />
+                        
+                                <div v-if="searchQuery" class="absolute bg-white border w-64 mt-2 rounded-lg shadow-lg">
+                                    <div v-for="item in filteredItems" :key="item.route" class="p-2 hover:bg-gray-100">
+                                        <Link :href="route(item.route)" class="block">
+                                            {{ item.name }}
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+                        </span>
                         <div class="hidden sm:ms-6 sm:flex sm:items-center">
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">
@@ -124,7 +159,7 @@ const toggleNavigationDropdown = () => {
                                             </button>
                                         </span>
                                     </template>
-
+                                    
                                     <template #content>
                                         <DropdownLink
                                             :href="route('profile.edit')"

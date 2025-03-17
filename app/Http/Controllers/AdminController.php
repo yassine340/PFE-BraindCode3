@@ -15,7 +15,7 @@ class AdminController extends Controller
                           ->get();
 
         // Retourner les données à Inertia
-        return Inertia::render('FormateurEnAttente', [
+        return Inertia::render('Formateurs/FormateurEnAttente', [
             'formateurs' => $formateurs
         ]);
     }
@@ -62,7 +62,7 @@ public function Listeformateur()
         $formateurs = User::where('role', 'formateur')
         ->where('status', 'valide')
         ->get();
-        return Inertia::render('ListeFormateur', [
+        return Inertia::render('Formateurs/ListeFormateur', [
             'formateurs' => $formateurs
         ]);
     }
@@ -75,22 +75,42 @@ public function deleteFormateur($id)
     ]);
 }
 
-public function detailsFormateur($id)
+public function showFormateur($id)
 {
     $formateur = User::findOrFail($id);
-    return Inertia::render('DetailsFormateur', [
+    return Inertia::render('Formateurs/Show', [ // Changer 'showFormateur' en un chemin correct
         'formateur' => $formateur
     ]);
 }
-public function modifierFormateur(Request $request, $id)
+
+public function editFormateur($id)
 {
     $formateur = User::findOrFail($id);
-    $formateur->update($request->all());
-    return response()->json([
-        'message' => 'Formateur modifié avec succès.'
+    return Inertia::render('Formateurs/Edit', [
+        'formateur' => $formateur
     ]);
 }
 
+public function updateFormateur(Request $request, $id)
+{
+    $formateur = User::findOrFail($id);
+
+    // Validation des données
+    $validated = $request->validate([
+        'first_name' => 'required|string|max:255',
+        'last_name' => 'required|string|max:255',
+        'phone' => 'nullable|string|max:20',
+        'email' => 'required|email|unique:users,email,' . $id,
+        'speciality' => 'required|string|max:255',
+        'description' => 'required|string|max:255',
+
+    ]);
+
+    // Mise à jour du formateur
+    $formateur->update($validated);
+
+    return redirect()->route('formateurs.index')->with('success', 'Formateur modifié avec succès.');
+}
 
     
 }
