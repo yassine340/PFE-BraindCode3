@@ -18,7 +18,14 @@
             <option :value="true">Oui</option>
             <option :value="false">Non</option>
           </select>
-  
+          <!-- Catégorie -->
+          <label class="block font-semibold">Catégorie</label>
+          <select v-model="form.category_id" class="w-full p-2 border rounded mb-4">
+            <option v-for="category in categories" :key="category.id" :value="category.id">
+              {{ category.name }}
+            </option>
+          </select>
+
           <!-- Image -->
           <label class="block font-semibold">Image</label>
           <input type="file" @change="handleImageUpload" class="w-full p-2 border rounded mb-4">
@@ -40,18 +47,36 @@
   </template>
   
   <script setup lang="ts">
-  import { ref } from "vue";
+  import { ref,onMounted  } from "vue";
   import { useForm, router } from "@inertiajs/vue3";
   import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+  import axios from "axios";
   
+
+  interface Category {
+  id: number;
+  name: string;
+}
+  // Définition des types
   interface Formation {
     id: number;
     titre: string;
     prix: number;
     estcertifiante: boolean;
     image_formation: string | null;
+    category_id: number;
   }
-  
+  const categories = ref<Category[]>([]);
+
+  // Charger les catégories au montage du composant
+  onMounted(async () => {
+    try {
+      const response = await axios.get('/categories');
+      categories.value = response.data;
+    } catch (error) {
+      console.error("Erreur lors du chargement des catégories", error);
+    }
+  });
   // Props depuis Laravel
   const props = defineProps<{ formation: Formation }>();
   
@@ -60,6 +85,7 @@
     titre: props.formation.titre,
     prix: props.formation.prix,
     estcertifiante: props.formation.estcertifiante,
+    category_id: props.formation.category_id,
     image_formation: null as File | null
   });
   

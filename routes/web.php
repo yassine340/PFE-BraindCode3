@@ -9,6 +9,10 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\DocumentController;
+use App\Models\Category;
+use App\Models\Formation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 
 // Route pour afficher la page d'accueil
@@ -135,5 +139,66 @@ Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name
 Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name('formations.edit');
 // Mettre à jour une formation (PUT)
 Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
+// Afficher le formulaire avec catégories
+Route::get('/formations', function (Request $request) {
+    $query = Formation::query();
+
+    if ($request->has('category_id') && $request->category_id !== "") {
+        $query->where('category_id', $request->category_id);
+    }
+
+    return inertia('Formations/Index', [
+        'formations' => $query->get(),
+    ]);
+});
+
+// afficher les categories
+
+Route::get('/categories', function () {
+    return response()->json(Category::all());
+});
+
+//************************************************************************************************* */
+
+
+Route::get('/formations', function (Request $request) {
+    try {
+        $query = $request->input('search'); // Get the search query from the request
+
+        $formations = Formation::query();
+
+        // If there's a search query, apply filtering
+        if ($query) {
+            // Search in the titre field
+            $formations->where('titre', 'LIKE', "%$query%");
+
+            // If query is numeric, search in prix
+            if (is_numeric($query)) {
+                $formations->orWhere('prix', $query);
+            }
+
+            // Search in modules and their lecons (lesson titles)
+            $formations->orWhereHas('modules', function ($q) use ($query) {
+                $q->where('titre', 'LIKE', "%$query%")
+                  ->orWhereHas('lecons', function ($q2) use ($query) {
+                      $q2->where('titre', 'LIKE', "%$query%");
+                  });
+            });
+        }
+
+        // Return filtered formations or all formations if no search query is provided
+        return inertia('Formations/Index', [
+            'formations' => $formations->get(), // Return the filtered or all formations
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Search error: ' . $e->getMessage());
+        
+        // Optionally, return all formations if there is an error
+        return inertia('Formations/Index', [
+            'formations' => Formation::all(), // Return all formations on error
+            'error' => 'Server error: ' . $e->getMessage(), // Pass the error message
+        ]);
+    }
+});
 
 

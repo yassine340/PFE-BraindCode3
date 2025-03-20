@@ -10,6 +10,7 @@
       <div class="bg-gray-100 p-6 rounded-lg shadow-lg mb-6">
         <p><strong>💰 Prix :</strong> {{ formation?.prix }} €</p>
         <p><strong>🎓 Certification :</strong> {{ formation?.estcertifiante ? 'Oui' : 'Non' }}</p>
+        <p><strong>🏷️ Catégorie :</strong> {{ formation?.category?.name || 'Non spécifiée' }}</p>
       </div>
 
       <!-- Image -->
@@ -39,7 +40,7 @@
                 <h4 class="text-md font-semibold text-blue-500">🎥 Vidéos :</h4>
                 <ul class="mt-2 pl-4">
                   <li v-for="video in lecon.videos" :key="video.id">
-                    <a :href="`/storage/${video.file}`" target="_blank" class="text-blue-600 hover:underline">
+                    <a :href="`/storage/videos/${video.file}`" target="_blank" class="text-blue-600 hover:underline">
                       {{ video.titre || 'Vidéo' }}
                     </a>
                   </li>
@@ -51,7 +52,7 @@
                 <h4 class="text-md font-semibold text-green-500">📄 Documents :</h4>
                 <ul class="mt-2 pl-4">
                   <li v-for="document in lecon.documents" :key="document.id">
-                    <a :href="`/storage/${document.file}`" target="_blank" class="text-green-600 hover:underline">
+                    <a :href="`/storage/documents/${document.file}`" target="_blank" class="text-green-600 hover:underline">
                       {{ document.titre || 'Document' }}
                     </a>
                   </li>
@@ -126,6 +127,11 @@ interface Formation {
   estcertifiante: boolean;
   image_formation: string | null;
   modules?: Module[];
+  category?: Category;
+}
+interface Category {
+  id: number;
+  name: string;
 }
 
 // Propriétés reçues depuis Laravel (Inertia.js)

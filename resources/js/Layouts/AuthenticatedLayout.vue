@@ -1,50 +1,70 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import axios from "axios";
 
-// Récupérer les données de l'utilisateur depuis Inertia.js
+// Prop for receiving formations and categories
+const props = defineProps({
+  formations: {
+    type: Array,
+    default: () => [], // Default empty array if formations are undefined
+  },
+  categories: {
+    type: Array,
+    default: () => [], // Default empty array if categories are undefined
+  }
+});
+
+const searchQuery = ref("");
+const formations = ref(props.formations); // Initialize formations with props
+
+// ✅ Update formations list when props change
+watch(
+  () => props.formations,
+  (newFormations) => {
+    formations.value = newFormations || []; // Ensure it's always an array
+  }
+);
+
+// ✅ Search Formations by Title (titre)
+const searchFormations = async () => {
+  await router.get("/formations", {
+    search: searchQuery.value, // Only pass the search query for the title
+  }, { preserveState: true });
+};
+
+// Load categories on mounted
+const categories = ref([]);
+onMounted(async () => {
+  try {
+    const response = await axios.get('/categories');
+    categories.value = response.data;
+  } catch (error) {
+    console.error("Erreur lors du chargement des catégories", error);
+  }
+});
+
+// Get user info from Inertia.js
 const page = usePage();
-const user = computed(() => page.props.auth.user); // Supposons que l'utilisateur est dans `auth.user`
+const user = computed(() => page.props.auth.user); // Get the authenticated user
 
-// Récupérer le rôle de l'utilisateur
-const role = computed(() => user.value?.role || 'user'); // Par défaut, 'user'
+// Get user role
+const role = computed(() => user.value?.role || 'user'); // Default to 'user' if no role is found
 
-// Déclarer la propriété réactive pour gérer l'état du menu dropdown
-const showingNavigationDropdown = ref(false); // Ajout de la ref pour la gestion du dropdown
+// Dropdown menu for navigation
+const showingNavigationDropdown = ref(false);
 
-// Fonction pour basculer l'état du dropdown
+// Toggle dropdown visibility
 const toggleNavigationDropdown = () => {
   showingNavigationDropdown.value = !showingNavigationDropdown.value;
 };
-// State for search query
-const searchQuery = ref("");
-const allItems = ref([
-  { name: "Dashboard Formateur", route: "DashboardFormateur" },
-  { name: "Upload Vidéos", route: "upload.videos" },
-  { name: "Voir Vidéos", route: "afficher.videos" },
-  { name: "Formations", route: "formation.list" },
-  { name: "Dashboard Administrateur", route: "DashboardAdmin" },
-  { name: "Formateurs en attente", route: "formateur.en.attente" },
-  { name: "Formateurs", route: "formateurs.index" },
-  { name: "Formations Admin", route: "formations.index" }
-]);
-
-// Computed property to filter items based on search query
-const filteredItems = computed(() => {
-  return allItems.value.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
-});
 </script>
-
-
-
 <template>
     <div>
         <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
@@ -78,8 +98,8 @@ const filteredItems = computed(() => {
                                         Voir Vidéos
                                     </NavLink>
                                     <NavLink 
-                                        :href="route('formation.list')" 
-                                        :active="route().current('formation.list')"
+                                        :href="route('formations.index')" 
+                                        :active="route().current('formations.index')"
                                     >
                                         Formations
                                     </NavLink>
@@ -103,8 +123,8 @@ const filteredItems = computed(() => {
                                     >
                                         Formations
                                     </NavLink>
+                                    
                                 </template>
-
                                 <!-- Pour les autres utilisateurs -->
                                 <template v-else>
                                     <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
@@ -113,25 +133,34 @@ const filteredItems = computed(() => {
                                 </template>
                             </div>
                         </div>
-                        <!-- Search bar -->
-                        <span class="flex items-center">
-                            <div class="relative">
-                                <input
-                                    type="text"
-                                    v-model="searchQuery"
-                                    placeholder="Rechercher..."
-                                    class="px-3 py-2 border rounded-lg w-64 focus:ring focus:ring-blue-300"
-                                />
-                        
-                                <div v-if="searchQuery" class="absolute bg-white border w-64 mt-2 rounded-lg shadow-lg">
-                                    <div v-for="item in filteredItems" :key="item.route" class="p-2 hover:bg-gray-100">
-                                        <Link :href="route(item.route)" class="block">
-                                            {{ item.name }}
-                                        </Link>
-                                    </div>
-                                </div>
-                            </div>
-                        </span>
+
+                        <!-- Category Selector in Navbar -->
+                        <div class="flex items-center">
+                            <select v-model="selectedCategory" @change="filterFormations"
+                                class="appearance-none bg-gray-900 text-white border border-gray-700 py-2 pl-4 pr-10 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
+                                    <option value="">Toutes les catégories</option>
+                                    <option v-for="category in categories" :key="category.id" :value="category.id">
+                                    {{ category.name }}
+                                </option>
+                            </select>   
+                        </div>
+                        <!-- Search Formations -->
+                        <div class="flex items-center">
+                            <!-- Search Input -->
+                            <input
+                            v-model="searchQuery"
+                            @input="searchFormations"
+                            placeholder="Rechercher une formation..."
+                            class="border p-2 rounded w-full"
+                            />
+
+                            <!-- Display Formations -->
+                            <ul v-if="formations.length">
+                                <li v-for="formation in formations" :key="formation.id">
+                                    {{ formation.titre }} - {{ formation.prix }} €
+                                </li>
+                            </ul>
+                        </div>
                         <div class="hidden sm:ms-6 sm:flex sm:items-center">
                             <!-- Settings Dropdown -->
                             <div class="relative ms-3">

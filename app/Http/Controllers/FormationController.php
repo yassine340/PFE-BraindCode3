@@ -38,13 +38,14 @@ class FormationController extends Controller
         'prix' => 'required|numeric',
         'estcertifiante' => 'required|boolean',
         'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+        'category_id' => 'required|exists:categories,id',
         'modules.*.titre' => 'required|string|max:255',
         'modules.*.description' => 'nullable|string',
         'modules.*.ordre' => 'required|integer',
         'modules.*.duree_estimee' => 'required|integer',
         'modules.*.lecons.*.titre' => 'required|string|max:255',
         'modules.*.lecons.*.contenu' => 'required|string',
-        'videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv',
+        'videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv,mkv',
         'videos.*.titre' => 'nullable|string|max:255',
         'documents.*.file' => 'nullable|mimes:pdf,doc,docx,txt',
         'documents.*.titre' => 'nullable|string|max:255',
@@ -57,13 +58,20 @@ class FormationController extends Controller
     } else {
         $imagePath = null;
     }
+    $request->validate([
+        'category_id' => 'required|exists:categories,id',
+    ]);
 
+    Formation::create([
+        'category_id' => $request->category_id,
+    ]);
     // Create formation
     $formation = Formation::create([
         'titre' => $request->titre,
         'prix' => $request->prix,
         'estcertifiante' => $request->estcertifiante,
         'image_formation' => $imagePath,
+        'category_id' => $request->category_id,
     ]);
 
     // Create modules and lessons
@@ -129,7 +137,8 @@ public function show($id)
 {
     $formation = Formation::with([
         'modules.lecons.videos',
-        'modules.lecons.documents'
+        'modules.lecons.documents',
+        'category'
     ])->findOrFail($id);
 
     return Inertia::render('Formations/Show', [
@@ -177,7 +186,8 @@ public function update(Request $request, $id)
         'titre' => 'required|string|max:255',
         'prix' => 'required|numeric',
         'estcertifiante' => 'required|boolean',
-        'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif'
+        'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+        'category_id' => 'required|exists:categories,id',
     ]);
 
     // Gérer l'upload de l'image si elle a été modifiée

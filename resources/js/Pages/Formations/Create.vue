@@ -32,7 +32,16 @@
               <label for="image_formation" class="block text-sm font-medium text-gray-700">Image de la formation</label>
               <input type="file" @change="handleImageUpload" id="image_formation" class="mt-1 block w-full p-2 border border-gray-300 rounded-md" />
             </div>
-
+             <!-- Category Selection -->
+             <div class="mb-4">
+              <label for="category_id" class="block text-sm font-medium text-gray-700">Catégorie</label>
+              <select v-model="selectedCategory" id="category_id" class="form-control w-full p-2 border border-gray-300 rounded-md">
+                <option disabled value="">Sélectionnez une catégorie</option>
+                <option v-for="category in categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
+                </option>
+              </select>
+            </div>
             <!-- Modules Section -->
             <div class="mb-4">
               <h3 class="text-xl font-semibold">Modules de la formation</h3>
@@ -120,20 +129,38 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head } from '@inertiajs/vue3';
+import axios from 'axios';
 
 // Form data references
 const titre = ref('');
 const prix = ref('');
 const estcertifiante = ref(false);
 const image_formation = ref(null);
+const selectedCategory = ref('');
+const categories = ref([]);
 const modules = ref([]);
 
+
+// Fetch categories on component mount
+onMounted(async () => {
+  try {
+    const response = await axios.get('/categories'); // Assurez-vous que cet endpoint est correct
+    categories.value = response.data;
+  } catch (error) {
+    console.error('Erreur lors du chargement des catégories', error);
+  }
+});
 // Methods for module and lesson management
 const addModule = () => {
+  // Ensure we are adding a valid module
+  if (modules.value.length && !modules.value[modules.value.length - 1].titre) {
+    alert('Please fill the previous module first.');
+    return;
+  }
   modules.value.push({ titre: '', description: '', ordre: '', duree_estimee: '', lecons: [] });
 };
 
@@ -174,10 +201,15 @@ const removeFile = (moduleIndex, leconIndex, fileIndex, fileType) => {
 
 // Form submission method
 const submitForm = () => {
+  if (!titre.value || !prix.value || !selectedCategory.value || !modules.value.length) {
+    alert("Please fill all required fields.");
+    return;
+  }
   const formData = new FormData();
   formData.append('titre', titre.value);
   formData.append('prix', prix.value);
   formData.append('estcertifiante', estcertifiante.value ? 1 : 0);
+  formData.append('category_id', selectedCategory.value);
   if (image_formation.value) {
     formData.append('image_formation', image_formation.value);
   }
@@ -210,6 +242,7 @@ const submitForm = () => {
     headers: { 'Content-Type': 'multipart/form-data' },
     onFinish: () => {
       alert('Formation créée avec succès !');
+      Inertia.reload();
     },
   });
 };

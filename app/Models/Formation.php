@@ -14,6 +14,7 @@ class Formation extends Model
         'prix',
         'estcertifiante',
         'image_formation',
+        'category_id'
     ];
 
     public function modules()
@@ -23,5 +24,8 @@ class Formation extends Model
     public function lecons()
     {
         return $this->hasMany(Lecon::class);
+    }
+    public function category() {
+        return $this->belongsTo(Category::class);
     }
 }
