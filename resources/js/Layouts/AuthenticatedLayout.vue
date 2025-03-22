@@ -9,6 +9,17 @@ import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
 import { Link, router } from '@inertiajs/vue3';
 import axios from "axios";
 
+// ✅ Filter Formations by Category
+const filterFormations = async () => {
+  if (selectedCategory.value !== "") {
+    // Pass category filter via query
+    await router.get("/formationscat", {
+      category: selectedCategory.value,
+    }, { preserveState: true });
+  }
+};
+
+
 // Prop for receiving formations and categories
 const props = defineProps({
   formations: {
@@ -41,14 +52,17 @@ const searchFormations = async () => {
 
 // Load categories on mounted
 const categories = ref([]);
+const selectedCategory = ref("");
+
 onMounted(async () => {
   try {
-    const response = await axios.get('/categories');
+    const response = await axios.get("/categories");
     categories.value = response.data;
   } catch (error) {
     console.error("Erreur lors du chargement des catégories", error);
   }
 });
+
 
 // Get user info from Inertia.js
 const page = usePage();
@@ -63,6 +77,10 @@ const showingNavigationDropdown = ref(false);
 // Toggle dropdown visibility
 const toggleNavigationDropdown = () => {
   showingNavigationDropdown.value = !showingNavigationDropdown.value;
+};
+// Method to handle navigation
+const navigateToRoute = (routeName) => {
+  router.visit(route(routeName)); // Use Inertia's router to visit the given route
 };
 </script>
 <template>
@@ -117,13 +135,41 @@ const toggleNavigationDropdown = () => {
                                     <NavLink :href="route('formateurs.index')" :active="route().current('formateurs.index')">
                                         Formateurs
                                     </NavLink>
-                                    <NavLink 
-                                        :href="route('formations.index')" 
-                                        :active="route().current('formations.index')"
-                                    >
-                                        Formations
-                                    </NavLink>
-                                    
+                                    <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                                    <!-- Dropdown Button -->
+                                    <div class="relative ms-3">
+                                        <Dropdown align="right" width="48">
+                                        <template #trigger>
+                                            <span class="inline-flex rounded-md">
+                                            <button
+                                                type="button"
+                                                class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                                            >
+                                                Sélectionner une page
+                                                <svg
+                                                class="-me-0.5 ms-2 h-4 w-4"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20"
+                                                fill="currentColor"
+                                                >
+                                                <path
+                                                    fill-rule="evenodd"
+                                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                                    clip-rule="evenodd"
+                                                />
+                                                </svg>
+                                            </button>
+                                            </span>
+                                        </template>
+
+                                        <template #content>
+                                            <!-- Dropdown Links -->
+                                            <DropdownLink @click="navigateToRoute('categories.index')" >Catégories</DropdownLink>
+                                            <DropdownLink @click="navigateToRoute('formations.index')" >Formations</DropdownLink>
+                                        </template>
+                                        </Dropdown>
+                                    </div>
+                                    </div>
                                 </template>
                                 <!-- Pour les autres utilisateurs -->
                                 <template v-else>
@@ -135,14 +181,44 @@ const toggleNavigationDropdown = () => {
                         </div>
 
                         <!-- Category Selector in Navbar -->
-                        <div class="flex items-center">
-                            <select v-model="selectedCategory" @change="filterFormations"
-                                class="appearance-none bg-gray-900 text-white border border-gray-700 py-2 pl-4 pr-10 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-gray-500 transition">
-                                    <option value="">Toutes les catégories</option>
-                                    <option v-for="category in categories" :key="category.id" :value="category.id">
-                                    {{ category.name }}
-                                </option>
-                            </select>   
+                        <div class="hidden sm:ms-6 sm:flex sm:items-center">
+                        <!-- Categories Dropdown -->
+                        <div class="relative ms-3">
+                            <Dropdown align="right" width="48">
+                            <template #trigger>
+                                <span class="inline-flex rounded-md">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium leading-4 text-gray-500 transition duration-150 ease-in-out hover:text-gray-700 focus:outline-none dark:bg-gray-800 dark:text-gray-400 dark:hover:text-gray-300"
+                                >
+                                    {{ selectedCategoryName || "Select Category" }}
+                                    <svg
+                                    class="-me-0.5 ms-2 h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                    >
+                                    <path
+                                        fill-rule="evenodd"
+                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                        clip-rule="evenodd"
+                                    />
+                                    </svg>
+                                </button>
+                                </span>
+                            </template>
+                            
+                            <template #content>
+                                <DropdownLink
+                                v-for="category in categories"
+                                :key="category.id"
+                                :href="`/formationscat?category=${category.id}`"
+                                >
+                                {{ category.name }}
+                                </DropdownLink>
+                            </template>
+                            </Dropdown>
+                        </div>
                         </div>
                         <!-- Search Formations -->
                         <div class="flex items-center">

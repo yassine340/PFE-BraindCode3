@@ -156,11 +156,6 @@ onMounted(async () => {
 });
 // Methods for module and lesson management
 const addModule = () => {
-  // Ensure we are adding a valid module
-  if (modules.value.length && !modules.value[modules.value.length - 1].titre) {
-    alert('Please fill the previous module first.');
-    return;
-  }
   modules.value.push({ titre: '', description: '', ordre: '', duree_estimee: '', lecons: [] });
 };
 
@@ -201,7 +196,7 @@ const removeFile = (moduleIndex, leconIndex, fileIndex, fileType) => {
 
 // Form submission method
 const submitForm = () => {
-  if (!titre.value || !prix.value || !selectedCategory.value || !modules.value.length) {
+  if (!titre.value || !prix.value || !selectedCategory.value) {
     alert("Please fill all required fields.");
     return;
   }
@@ -242,7 +237,25 @@ const submitForm = () => {
     headers: { 'Content-Type': 'multipart/form-data' },
     onFinish: () => {
       alert('Formation créée avec succès !');
-      Inertia.reload();
+      
+      // Reset the form fields after submission
+      titre.value = '';
+      prix.value = '';
+      image_formation.value = null;// Reset image
+      estcertifiante.value = false;
+      image_formation.value = null;
+      selectedCategory.value = ''; // Reset category
+      modules.value = []; // Reset modules
+
+      // Optionally, fetch categories again to ensure data is fresh
+      onMounted(async () => {
+        try {
+          const response = await axios.get('/categories');
+          categories.value = response.data;
+        } catch (error) {
+          console.error('Erreur lors du chargement des catégories', error);
+        }
+      });
     },
   });
 };

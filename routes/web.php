@@ -13,6 +13,7 @@ use App\Models\Category;
 use App\Models\Formation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\CategoryController;
 
 
 // Route pour afficher la page d'accueil
@@ -140,26 +141,46 @@ Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name(
 // Mettre à jour une formation (PUT)
 Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
 // Afficher le formulaire avec catégories
-Route::get('/formations', function (Request $request) {
+Route::get('/formationscat', function (Request $request) {
     $query = Formation::query();
 
-    if ($request->has('category_id') && $request->category_id !== "") {
-        $query->where('category_id', $request->category_id);
+    if ($request->has('category') && $request->category !== "") { 
+        $query->where('category_id', $request->category);
     }
 
+    // Fetch categories for the form
+    $categories = Category::all();
+
+    // Get filtered formations
+    $formations = $query->get();
+
     return inertia('Formations/Index', [
-        'formations' => $query->get(),
+        'formations' => $formations,
+        'categories' => $categories, // Pass categories to the view
     ]);
 });
 
-// afficher les categories
 
+// Route pour afficher la liste des catégories
+Route::get('/categorie', [CategoryController::class, 'index'])->name('categories.index');
+// Route pour afficher le formulaire de création d'une catégorie
+Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
+// Route pour enregistrer une catégorie
+Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+// Route pour supprimer une catégorie
+Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+// Route pour mettre à jour une catégorie
+Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+// Route pour afficher le formulaire de modification d'une catégorie
+Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+
+
+// afficher les categories
 Route::get('/categories', function () {
     return response()->json(Category::all());
 });
 
 //************************************************************************************************* */
-
 
 Route::get('/formations', function (Request $request) {
     try {
