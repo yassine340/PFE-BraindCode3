@@ -11,8 +11,12 @@ const props = defineProps({
 <template>
   <Head title="Détails du formateur" />
   <AuthenticatedLayout>
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-black dark:text-gray-200">
+        📋 Détails du Formateur {{ formateur.first_name }} {{ formateur.last_name }}
+      </h2>
+    </template>
     <div class="container mx-auto p-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6">Détails du Formateur</h1>
 
       <div class="bg-white shadow-md rounded-lg p-6">
         <p><strong>ID :</strong> {{ formateur.id }}</p>

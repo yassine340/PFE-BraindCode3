@@ -26,10 +26,12 @@ const updateCategory = () => {
 
 <template>
   <AuthenticatedLayout>
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-black dark:text-gray-200">
+        ✏️ Modifier la Catégorie {{ category.name }}
+      </h2>
+    </template>
     <div class="container mx-auto p-6">
-      <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">
-        Modifier la Catégorie
-      </h1>
 
       <form @submit.prevent="updateCategory" class="bg-white p-6 rounded-lg shadow-md">
         <div class="mb-4">

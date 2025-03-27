@@ -1,8 +1,14 @@
 <template>
     <AuthenticatedLayout>
+      <template #header>
+            <h2
+                class="text-xl font-semibold leading-tight text-black dark:text-gray-200"
+            >
+            ✏️ Modifier la formation
+            </h2>
+        </template>
       <div class="container mx-auto p-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-6 text-center">✏️ Modifier la formation</h1>
-  
+        
         <form @submit.prevent="updateFormation" class="bg-gray-100 p-6 rounded-lg shadow-lg">
           <!-- Titre -->
           <label class="block font-semibold">Titre</label>

@@ -26,9 +26,10 @@ const submit = () => {
         <Head title="Forgot Password" />
 
         <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
-            Forgot your password? No problem. Just let us know your email
-            address and we will email you a password reset link that will allow
-            you to choose a new one.
+            Mot de passe oublié ? Aucun problème.
+            Indiquez-nous simplement votre adresse e-mail
+             et nous vous enverrons un lien de réinitialisation
+              de mot de passe qui vous permettra d'en choisir un nouveau.
         </div>
 
         <div
@@ -45,7 +46,7 @@ const submit = () => {
                 <TextInput
                     id="email"
                     type="email"
-                    class="mt-1 block w-full"
+                    class="mt-1 block w-full transition duration-300 ease-in-out focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     v-model="form.email"
                     required
                     autofocus
@@ -59,10 +60,41 @@ const submit = () => {
                 <PrimaryButton
                     :class="{ 'opacity-25': form.processing }"
                     :disabled="form.processing"
+                    class="transition duration-300 ease-in-out transform hover:scale-105 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                    Email Password Reset Link
+                    Lien de réinitialisation du mot de passe par e-mail
                 </PrimaryButton>
             </div>
         </form>
     </GuestLayout>
 </template>
+
+<style scoped>
+/* Input field focus effect */
+input[type="email"] {
+    transition: all 0.3s ease-in-out;
+}
+
+input[type="email"]:focus {
+    outline: none;
+    border-color: #2760f1; /* Custom color */
+    box-shadow: 0 0 0 3px rgba(39, 96, 241, 0.2);
+}
+
+/* Button hover and focus effects */
+.primary-button {
+    background-color: #4f46e5;
+    color: white;
+    transition: all 0.3s ease-in-out;
+}
+
+.primary-button:hover {
+    background-color: #4338ca;
+    transform: scale(1.05);
+}
+
+.primary-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px #2760f1;
+}
+</style>

@@ -41,11 +41,12 @@ function deleteCategory(id) {
 <template>
   <Head title="Liste des Catégories" />
   <AuthenticatedLayout>
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-black dark:text-gray-200">
+        🌟 Liste des Catégories
+      </h2>
+    </template>
     <div class="container mx-auto p-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
-        Liste des Catégories
-      </h1>
-
       <!-- Bouton Ajouter une Catégorie -->
       <div class="text-center mb-6">
         <button class="btn-add" @click="ajouterCategory">

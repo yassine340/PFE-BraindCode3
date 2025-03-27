@@ -31,9 +31,12 @@ const submit = () => {
 <template>
   <Head title="Modifier Formateur" />
   <AuthenticatedLayout>
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-black dark:text-gray-200">
+        📋 Modifier Formateur {{ form.first_name }} {{ form.last_name }}
+      </h2>
+    </template>
     <div class="container mx-auto p-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6">Modifier Formateur</h1>
-
       <form @submit.prevent="submit" class="bg-white shadow-md rounded-lg p-6">
         <div class="mb-4">
           <label class="block text-gray-700 font-bold mb-2">Prénom</label>

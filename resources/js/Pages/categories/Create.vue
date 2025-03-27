@@ -23,11 +23,12 @@ const submit = () => {
 <template>
   <Head title="Ajouter une Catégorie" />
   <AuthenticatedLayout>
+    <template #header>
+      <h2 class="text-xl font-semibold leading-tight text-black dark:text-gray-200">
+        ✏️ Ajouter une Catégorie
+      </h2>
+    </template>
     <div class="container mx-auto p-6">
-      <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">
-        Ajouter une Catégorie
-      </h1>
-
       <form @submit.prevent="submit" class="bg-white p-6 rounded-lg shadow-lg">
         <div class="mb-4">
           <label class="block text-gray-700 font-bold mb-2">Nom</label>

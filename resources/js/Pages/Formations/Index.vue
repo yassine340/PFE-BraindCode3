@@ -1,9 +1,15 @@
+
 <template>
     <Head title="Afficher toutes les formations" />
     <AuthenticatedLayout>
+      <template #header>
+            <h2
+                class="text-xl font-semibold leading-tight text-black dark:text-gray-200"
+            >
+            🌟 Liste des Formations
+            </h2>
+        </template>
       <div class="container mx-auto p-6">
-        <h1 class="text-4xl font-bold text-gray-800 mb-12 text-center">🌟 Liste des Formations</h1>
-  
         <!-- Button to add a new formation -->
         <div class="text-center mb-6">
           <Link href="/formations/create" 
