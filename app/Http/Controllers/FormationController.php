@@ -23,61 +23,60 @@ class FormationController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create()    
     {
         return Inertia::render('Formations/Create');
     }
-
-    /**
-     * Store a newly created formation.
-     */
     public function store(Request $request)
 {
-    $request->validate([
-        'titre' => 'required|string|max:255',
-        'prix' => 'required|numeric',
-        'estcertifiante' => 'required|boolean',
-        'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-        'category_id' => 'required|exists:categories,id',
-        'modules.*.titre' => 'required|string|max:255',
-        'modules.*.description' => 'nullable|string',
-        'modules.*.ordre' => 'required|integer',
-        'modules.*.duree_estimee' => 'required|integer',
-        'modules.*.lecons.*.titre' => 'required|string|max:255',
-        'modules.*.lecons.*.contenu' => 'required|string',
-        'videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv,mkv',
-        'videos.*.titre' => 'nullable|string|max:255',
-        'documents.*.file' => 'nullable|mimes:pdf,doc,docx,txt',
-        'documents.*.titre' => 'nullable|string|max:255',
-    ]);
+    try {
+        $request->validate([
+            'titre' => 'required|string|max:255',
+            'prix' => 'required|numeric',
+            'estcertifiante' => 'required|boolean',
+            'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'category_id' => 'required|exists:categories,id',
+            'modules.*.titre' => 'required|string|max:255',
+            'modules.*.description' => 'nullable|string',
+            'modules.*.ordre' => 'required|integer',
+            'modules.*.duree_estimee' => 'required|integer',
+            'modules.*.lecons.*.titre' => 'required|string|max:255',
+            'modules.*.lecons.*.contenu' => 'required|string',
+            'modules.*.lecons.*.videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv',
+            'modules.*.lecons.*.videos.*.titre' => 'nullable|string|max:255',
+            'modules.*.lecons.*.documents.*.file' => 'nullable|mimes:pdf,doc,docx,txt',
+            'modules.*.lecons.*.documents.*.titre' => 'nullable|string|max:255',
+            'modules.*.lecons.*.quiz.titre' => 'nullable|string|max:255',
+            'modules.*.lecons.*.quiz.noteFinale' => 'nullable|integer',
+            'modules.*.lecons.*.quiz.dureeMaximale' => 'nullable|integer',
+            'modules.*.lecons.*.quiz.questions.*.contenu' => 'nullable|string',
+            'modules.*.lecons.*.quiz.questions.*.reponses.*.contenu' => 'nullable|string',
+            'modules.*.lecons.*.quiz.questions.*.reponses.*.est_correcte' => 'nullable|boolean',
+        ]);
 
-    // Handle image upload
-    if ($request->hasFile('image_formation')) {
-        $imageName = time() . '_' . $request->file('image_formation')->getClientOriginalName();
-        $imagePath = $request->file('image_formation')->storeAs('formations', $imageName, 'public');
-    } else {
-        $imagePath = null;
-    }
-    $request->validate([
-        'category_id' => 'required|exists:categories,id',
-    ]);
+        // Handle image upload
+        $imagePath = $request->hasFile('image_formation') 
+            ? $request->file('image_formation')->storeAs('formations', time() . '_' . $request->file('image_formation')->getClientOriginalName(), 'public') 
+            : null;
 
-    Formation::create([
-        'category_id' => $request->category_id,
-    ]);
-    // Create formation
-    $formation = Formation::create([
-        'titre' => $request->titre,
-        'prix' => $request->prix,
-        'estcertifiante' => $request->estcertifiante,
-        'image_formation' => $imagePath,
-        'category_id' => $request->category_id,
-    ]);
+            $request->validate([
+                'category_id' => 'required|exists:categories,id',
+            ]);
+        
+            Formation::create([
+                'category_id' => $request->category_id,
+            ]);
+            // Create formation
+            $formation = Formation::create([
+                'titre' => $request->titre,
+                'prix' => $request->prix,
+                'estcertifiante' => $request->estcertifiante,
+                'image_formation' => $imagePath,
+                'category_id' => $request->category_id,
+            ]);
 
-    // Create modules and lessons
-    if ($request->has('modules')) {
+        // Create modules, lessons, quizzes, questions, and answers
         foreach ($request->modules as $moduleData) {
-            // Create module
             $module = $formation->modules()->create([
                 'titre' => $moduleData['titre'],
                 'description' => $moduleData['description'] ?? null,
@@ -85,52 +84,79 @@ class FormationController extends Controller
                 'duree_estimee' => $moduleData['duree_estimee'],
             ]);
 
-            // Create lessons for each module
-            if (isset($moduleData['lecons'])) {
-                foreach ($moduleData['lecons'] as $leconData) {
-                    $lecon = $module->lecons()->create([
-                        'titre' => $leconData['titre'],
-                        'contenu' => $leconData['contenu'],
-                    ]);
+            foreach ($moduleData['lecons'] as $leconData) {
+                $lecon = $module->lecons()->create([
+                    'titre' => $leconData['titre'],
+                    'contenu' => $leconData['contenu'],
+                ]);
 
-                    // Handle video upload for the lesson
-                    if (isset($leconData['videos'])) {
-                        foreach ($leconData['videos'] as $videoData) {
-                            if (isset($videoData['file'])) {
-                                $videoName = time() . '_' . $videoData['file']->getClientOriginalName();
-                                $videoPath = $videoData['file']->storeAs('videos', $videoName, 'public');
+                // Handle video upload for the lesson
+                if (isset($leconData['videos'])) {
+                    foreach ($leconData['videos'] as $videoData) {
+                        if (isset($videoData['file'])) {
+                            $videoName = time() . '_' . $videoData['file']->getClientOriginalName();
+                            $videoPath = $videoData['file']->storeAs('videos', $videoName, 'public');
 
-                                $lecon->videos()->create([
-                                    'titre' => $videoData['titre'] ?? 'Sans titre',
-                                    'url' => Storage::url($videoPath),
-                                ]);
-                            }
+                            $lecon->videos()->create([
+                                'titre' => $videoData['titre'] ?? 'Sans titre',
+                                'url' => Storage::url($videoPath),
+                            ]);
                         }
                     }
+                }
 
-                    // Handle document upload for the lesson
-                    if (isset($leconData['documents'])) {
-                        foreach ($leconData['documents'] as $documentData) {
-                            if (isset($documentData['file'])) {
-                                $documentName = time() . '_' . $documentData['file']->getClientOriginalName();
-                                $documentPath = $documentData['file']->storeAs('documents', $documentName, 'public');
+                // Handle document upload for the lesson
+                if (isset($leconData['documents'])) {
+                    foreach ($leconData['documents'] as $documentData) {
+                        if (isset($documentData['file'])) {
+                            $documentName = time() . '_' . $documentData['file']->getClientOriginalName();
+                            $documentPath = $documentData['file']->storeAs('documents', $documentName, 'public');
 
-                                $lecon->documents()->create([
-                                    'titre' => $documentData['titre'] ?? 'Sans titre',
-                                    'url' => Storage::url($documentPath),
-                                ]);
+                            $lecon->documents()->create([
+                                'titre' => $documentData['titre'] ?? 'Sans titre',
+                                'url' => Storage::url($documentPath),
+                            ]);
+                        }
+                    }
+                }
+
+                // Create quiz if provided
+                if (isset($leconData['quiz'])) {
+                    $quiz = $lecon->quiz()->create([
+                        'titre' => $leconData['quiz']['titre'],
+                        'noteFinale' => $leconData['quiz']['noteFinale'],
+                        'dureeMaximale' => $leconData['quiz']['dureeMaximale'],
+                    ]);
+
+                    // Create questions for the quiz
+                    if (isset($leconData['quiz']['questions'])) {
+                        foreach ($leconData['quiz']['questions'] as $questionData) {
+                            $question = $quiz->questions()->create([
+                                'contenu' => $questionData['contenu'],
+                            ]);
+
+                            // Create answers for the question
+                            if (isset($questionData['reponses'])) {
+                                foreach ($questionData['reponses'] as $reponseData) {
+                                    $question->reponses()->create([
+                                        'contenu' => $reponseData['contenu'],
+                                        'est_correcte' => $reponseData['est_correcte'],
+                                    ]);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    return Inertia::render('Formations/Create', [
-        'message' => 'Formation créée avec succès',
-        'formation' => $formation
-    ]);
+        return response()->json([
+            'message' => 'Formation créée avec succès avec ses modules, leçons, vidéos, documents et quiz',
+            'formation' => $formation,
+        ], 201);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
 }
 
 public function show($id)
@@ -138,11 +164,28 @@ public function show($id)
     $formation = Formation::with([
         'modules.lecons.videos',
         'modules.lecons.documents',
+        'modules.lecons.quiz.questions.reponses', // Charger les quiz, questions et réponses
         'category'
     ])->findOrFail($id);
 
+    // Préparer les données pour afficher un seul module, une seule leçon, etc.
+    $currentModuleIndex = 0; // Par défaut, afficher le premier module
+    $currentLeconIndex = 0; // Par défaut, afficher la première leçon du module
+
+    $modules = $formation->modules;
+
+    // Récupérer le module et la leçon actuels
+    $currentModule = $modules[$currentModuleIndex] ?? null;
+    $currentLecon = $currentModule->lecons[$currentLeconIndex] ?? null;
+
     return Inertia::render('Formations/Show', [
-        'formation' => $formation
+        'formation' => $formation,
+        'currentModule' => $currentModule,
+        'currentLecon' => $currentLecon,
+        'currentModuleIndex' => $currentModuleIndex,
+        'currentLeconIndex' => $currentLeconIndex,
+        'totalModules' => count($modules),
+        'totalLecons' => $currentModule ? count($currentModule->lecons) : 0,
     ]);
 }
 public function destroy($id)

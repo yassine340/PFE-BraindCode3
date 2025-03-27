@@ -14,6 +14,11 @@ use App\Models\Formation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\QuizController;
+use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\ReponseController;
+use App\Http\Controllers\GamificationController;
+use App\Models\Question;
 
 
 // Route pour afficher la page d'accueil
@@ -221,5 +226,27 @@ Route::get('/formations', function (Request $request) {
         ]);
     }
 });
+// Creer un quizz
+//************************************************************** */
+Route::post('/quizzes/store', [QuizController::class, 'store']);
+Route::get('/quizzes/lecon/{lecon_id}', [QuizController::class, 'getByLecon']);
 
+/****************************************************************** */
+
+// Creer une Question
+//************************************************************** */
+Route::post('/questions', [QuestionController::class, 'store']);
+/****************************************************************** */
+// Creer des Reponses
+//************************************************************** */
+Route::post('/reponses', [ReponseController::class, 'storeMultiple']);
+//Route::post('/reponses', [ReponseController::class, 'showResponses']);
+/****************************************************************** */
+// Afficher le formulaire de création d'un quizz
+Route::get('/quizManager', function () {
+    return Inertia::render('QuizManager');
+})->name('quizManager');
+//************************************************************************************************* */
+//Partie Gamification
+Route::post('/gamification/submit', [GamificationController::class, 'store'])->name('gamification.store');
 
