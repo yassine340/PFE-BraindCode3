@@ -49,7 +49,7 @@
             
             <!-- Image avec overlay -->
             <div class="relative overflow-hidden h-48 md:h-56 lg:h-64">
-              <img v-if="formation.image_formation" 
+              <img v-if="formation.image_formation"
                   :src="`/storage/${formation.image_formation}`" 
                   alt="Image formation" 
                   class="w-full h-full object-cover transition-transform duration-500 hover:scale-110">

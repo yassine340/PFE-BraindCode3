@@ -1,10 +1,10 @@
 <template>
   <Head title="Créer une formation" />
   <AuthenticatedLayout>
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-10">
-      <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-0 m-0">
+      <div class="container-full w-full h-screen overflow-y-auto px-4 sm:px-6 lg:px-8">
         <!-- En-tête de page -->
-        <div class="text-center mb-12">
+        <div class="text-center pt-8 mb-6">
           <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 mb-4">
             Créer une nouvelle formation
           </h1>
@@ -12,7 +12,7 @@
         </div>
 
         <!-- Formulaire principal avec étapes visuelles -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg w-full">
           <!-- Barre de progression -->
           <div class="bg-gradient-to-r from-blue-500 to-indigo-600 h-2"></div>
 
@@ -90,16 +90,19 @@
                 </div>
               </div>
             </div>
-            <!-- Category Selection -->
-            <div class="mb-4">
-              <label for="category_id" class="block text-sm font-medium text-gray-700">Catégorie</label>
-              <select v-model="selectedCategory" id="category_id" class="form-control w-full p-2 border border-gray-300 rounded-md">
-                <option disabled value="">Sélectionnez une catégorie</option>
-                <option v-for="category in categories" :key="category.id" :value="category.id">
-                  {{ category.name }}
-                </option>
-              </select>
-            </div>
+            <!-- Sélection de la catégorie -->
+            <select 
+              v-model="selectedCategory" 
+              id="category_id" 
+              class="form-control w-full p-2 border border-gray-300 rounded-md"
+              required
+            >
+              <option value="" disabled>Sélectionnez une catégorie</option>
+              <option v-for="category in categories" :key="category.id" :value="category.id">
+                {{ category.name }}
+              </option>
+            </select>
+            <br>
             <!-- Section 2: Modules et Leçons -->
             <div>
               <h2 class="text-2xl font-semibold text-gray-800 flex items-center mb-6">
@@ -266,7 +269,6 @@
                                   file:text-sm file:font-semibold
                                   file:bg-blue-50 file:text-blue-700
                                   hover:file:bg-blue-100"
-                                accept="video/*"
                               />
 
                               <ul v-if="lecon.videos.length" class="mt-3 space-y-2">
@@ -552,8 +554,14 @@ const modules = ref([]);
 // Fetch categories on component mount
 onMounted(async () => {
   try {
-    const response = await axios.get('/categories'); // Assurez-vous que cet endpoint est correct
+    const response = await axios.get('/categories');
     categories.value = response.data;
+    
+    // Optional: If you want to automatically select the first category
+    if (categories.value.length > 0) {
+      // Uncomment the line below if you want to auto-select the first category
+      // selectedCategory.value = categories.value[0].id;
+    }
   } catch (error) {
     console.error('Erreur lors du chargement des catégories', error);
   }
@@ -731,11 +739,12 @@ const submitForm = () => {
     headers: { 'Content-Type': 'multipart/form-data' },
     onSuccess: () => {
       alert('Formation créée avec succès !');
+      Inertia.reload(); // This will refresh the current page
     },
     onError: (errors) => {
       console.error('Erreurs lors de la soumission:', errors);
       alert('Une erreur est survenue lors de la création de la formation. Veuillez vérifier tous les champs.');
     }
-  });
+});
 };
 </script>
