@@ -65,17 +65,17 @@ class GamificationController extends Controller
                 
                 // Vous pouvez ajouter d'autres paliers ici
                 // Exemple pour un deuxième badge à 10 points
-                if ($totalPoints >= 10 && $badgeCount < 2) {
+                if ($totalPoints >= 6 && $badgeCount < 2) {
                     $badgeCount = 2;
                     $newBadgeEarned = true;
-                    $badgeImagePath = '/storage/formations/badge_silver.png'; // Vous pouvez utiliser des images différentes pour chaque niveau
+                    $badgeImagePath = '/storage/formations/badge_Ultimate_Quiz_Taker.png'; // Vous pouvez utiliser des images différentes pour chaque niveau
                 }
                 
                 // Exemple pour un troisième badge à 20 points
-                if ($totalPoints >= 20 && $badgeCount < 3) {
+                if ($totalPoints >= 8 && $badgeCount < 3) {
                     $badgeCount = 3;
                     $newBadgeEarned = true;
-                    $badgeImagePath = '/storage/formations/badge_gold.png';
+                    $badgeImagePath = '/storage/formations/badge_Seasoned_Apprentice.png';
                 }
             } else if ($totalPoints >= 4) {
                 // Nouvel utilisateur avec plus de 4 points reçoit directement un badge
@@ -136,4 +136,88 @@ class GamificationController extends Controller
             return 'Débutant';
         }
     }
+    // Ajouter cette nouvelle méthode à votre GamificationController
+public function getUserStats($userId = null)
+{
+    try {
+        // Si aucun ID n'est fourni, utiliser l'utilisateur connecté
+        if (!$userId) {
+            $userId = auth()->id();
+        }
+        
+        // Vérifier si l'utilisateur existe
+        if (!$userId) {
+            return response()->json([
+                'message' => 'Utilisateur non authentifié',
+            ], 401);
+        }
+        
+        // Récupérer les informations globales de gamification
+        $globalStats = UserGlobalGamification::where('user_id', $userId)->first();
+        
+        // Récupérer tous les quiz complétés par l'utilisateur
+        $quizStats = UserGamification::where('user_id', $userId)
+            ->with('quiz.lecon.module.formation') // Charger les relations pour afficher les infos des formations
+            ->orderByDesc('updated_at')
+            ->get();
+            
+        // Déterminer les badges obtenus
+        $badges = [];
+        
+        if ($globalStats) {
+            // Badge niveau 1
+            if ($globalStats->badges >= 1) {
+                $badges[] = [
+                    'id' => 1,
+                    'name' => 'Quiz Starter',
+                    'description' => 'Obtenu après avoir validé plusieurs quiz',
+                    'image' => '/storage/formations/badge.png',
+                    'obtained_at' => $globalStats->updated_at
+                ];
+            }
+            
+            // Badge niveau 2
+            if ($globalStats->badges >= 2) {
+                $badges[] = [
+                    'id' => 2,
+                    'name' => 'Ultimate Quiz Taker',
+                    'description' => 'Vous maîtrisez l\'art de répondre aux quiz',
+                    'image' => '/storage/formations/badge_Ultimate_Quiz_Taker.png',
+                    'obtained_at' => $globalStats->updated_at
+                ];
+            }
+            
+            // Badge niveau 3
+            if ($globalStats->badges >= 3) {
+                $badges[] = [
+                    'id' => 3,
+                    'name' => 'Seasoned Apprentice',
+                    'description' => 'Vous êtes sur la voie de l\'expertise',
+                    'image' => '/storage/formations/badge_Seasoned_Apprentice.png',
+                    'obtained_at' => $globalStats->updated_at
+                ];
+            }
+        }
+        
+        // Formater les données pour la réponse
+        $data = [
+            'user_id' => $userId,
+            'total_points' => $globalStats ? $globalStats->total_points : 0,
+            'global_level' => $globalStats ? $globalStats->global_level : 'Débutant',
+            'badges_count' => $globalStats ? $globalStats->badges : 0,
+            'badges' => $badges,
+            'quiz_history' => $quizStats,
+        ];
+        
+        return response()->json([
+            'message' => 'Statistiques récupérées avec succès',
+            'data' => $data
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Erreur lors de la récupération des statistiques',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 }

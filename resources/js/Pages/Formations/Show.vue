@@ -1,7 +1,7 @@
 <template>
   <AuthenticatedLayout>
     <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-10">
-      <div class="container mx-auto p-6 max-w-5xl">
+      <div class="container mx-auto p-6 max-w-full">
         <!-- En-tête de formation -->
         <div class="bg-white rounded-2xl shadow-xl overflow-hidden mb-10">
           <!-- Image de bannière -->

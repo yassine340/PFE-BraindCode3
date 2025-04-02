@@ -249,4 +249,12 @@ Route::get('/quizManager', function () {
 //************************************************************************************************* */
 //Partie Gamification
 Route::post('/gamification/submit', [GamificationController::class, 'store'])->name('gamification.store');
+// Ajouter cette route avec vos autres routes
+Route::get('/gamification/stats/{userId?}', [GamificationController::class, 'getUserStats'])
+    ->name('gamification.stats');
+
+// Route pour la vue (page des statistiques)
+Route::get('/stats', function () {
+    return Inertia::render('Stats');
+})->middleware(['auth'])->name('user.stats');
 
