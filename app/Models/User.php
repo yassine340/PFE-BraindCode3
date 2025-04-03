@@ -22,14 +22,15 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'phone',
         'password',
+        'image_url',
         'startup_name',
         'code_fiscal',
         'startup_email',
         'startup_phone',
         'speciality',
         'description',
-        'role', // ✅ Ajout du champ rôle
-        'status', // ✅ Ajout du champ status
+        'role',
+        'status',
     ];
 
     /**

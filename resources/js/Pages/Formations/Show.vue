@@ -59,237 +59,267 @@
           </div>
         </div>
         
-        <!-- Module actuel -->
-        <div v-if="currentModule" class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 transform transition-all duration-200 hover:shadow-2xl">
-          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 py-4 px-6">
-            <h2 class="text-2xl font-bold text-white">
-              Module {{ currentModuleIndex.value + 1 }} : {{ currentModule.titre }}
-            </h2>
-            <div class="flex items-center mt-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span class="ml-2 text-indigo-100">{{ currentModule.duree_estimee || 0 }} minutes</span>
+        <!-- Payment Required Message & Button -->
+        <div v-if="!hasUserPaid" class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
+          <div class="p-8 text-center">
+            <div class="mb-6">
+              <div class="h-20 w-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h2 class="text-2xl font-bold text-gray-800 mb-3">Accès au contenu restreint</h2>
+              <p class="text-gray-600 mb-6">Pour accéder au contenu complet de cette formation, veuillez procéder au paiement.</p>
+            </div>
+            
+            <div class="flex justify-center">
+              <button 
+                @click="showPaymentModal = true"
+                class="py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                S'inscrire à cette formation - {{ formation?.prix }} €
+              </button>
             </div>
           </div>
-          
-          <div class="p-6">
-            <p class="text-gray-700 mb-4">{{ currentModule.description }}</p>
+        </div>
+        
+        <!-- Course Content (visible only after payment) -->
+        <template v-if="hasUserPaid">
+          <!-- Module actuel -->
+          <div v-if="currentModule" class="bg-white rounded-2xl shadow-xl overflow-hidden mb-8 transform transition-all duration-200 hover:shadow-2xl">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 py-4 px-6">
+              <h2 class="text-2xl font-bold text-white">
+                Module {{ currentModuleIndex.value + 1 }} : {{ currentModule.titre }}
+              </h2>
+              <div class="flex items-center mt-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span class="ml-2 text-indigo-100">{{ currentModule.duree_estimee || 0 }} minutes</span>
+              </div>
+            </div>
             
-            <!-- Leçon actuelle -->
-            <div v-if="currentLecon" class="border border-gray-200 rounded-xl p-6 mt-6 bg-gray-50">
-              <div class="flex items-center mb-4">
-                <div class="bg-blue-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
-                  <span class="text-white font-bold">{{ currentLeconIndex.value + 1 }}</span>
-                </div>
-                <h3 class="text-xl font-bold text-gray-800">{{ currentLecon.titre }}</h3>
-              </div>
+            <div class="p-6">
+              <p class="text-gray-700 mb-4">{{ currentModule.description }}</p>
               
-              <div class="prose max-w-none mb-8">
-                <p>{{ currentLecon.contenu }}</p>
-              </div>
-              
-              <!-- Vidéos -->
-              <div v-if="currentLecon?.videos?.length" class="mb-8">
-                <h4 class="flex items-center text-lg font-bold text-gray-800 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  Vidéos
-                </h4>
-                
-                <div class="grid gap-6">
-                  <div v-for="video in currentLecon?.videos" :key="video.id"
-                       class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
-                    <div class="p-4 border-b border-gray-100">
-                      <h5 class="font-semibold text-gray-800">{{ video.titre || 'Vidéo' }}</h5>
-                    </div>
-                    <video controls class="w-full">
-                      <source :src="video.url" type="video/mp4">
-                      Votre navigateur ne supporte pas la lecture de vidéos.
-                    </video>
+              <!-- Leçon actuelle -->
+              <div v-if="currentLecon" class="border border-gray-200 rounded-xl p-6 mt-6 bg-gray-50">
+                <div class="flex items-center mb-4">
+                  <div class="bg-blue-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
+                    <span class="text-white font-bold">{{ currentLeconIndex.value + 1 }}</span>
                   </div>
+                  <h3 class="text-xl font-bold text-gray-800">{{ currentLecon.titre }}</h3>
                 </div>
-              </div>
-              
-              <!-- Documents -->
-              <div v-if="currentLecon?.documents?.length" class="mb-8">
-                <h4 class="flex items-center text-lg font-bold text-gray-800 mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Documents
-                </h4>
                 
-                <div class="grid gap-6">
-                  <div v-for="document in currentLecon.documents" :key="document.id"
-                       class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
-                    <div class="p-4 border-b border-gray-100">
-                      <h5 class="font-semibold text-gray-800">{{ document.titre || 'Document' }}</h5>
-                    </div>
-                    <div class="h-[400px] resize-y overflow-auto">
-                      <embed :src="document.url" class="w-full h-full" type="application/pdf" />
-                    </div>
-                  </div>
+                <div class="prose max-w-none mb-8">
+                  <p>{{ currentLecon.contenu }}</p>
                 </div>
-              </div>
-              
-              <!-- Quiz Section -->
-              <div v-if="currentLecon?.quiz" class="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden mt-8">
-                <!-- Quiz Header -->
-                <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
-                  <h4 class="text-lg font-bold text-white flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                
+                <!-- Vidéos -->
+                <div v-if="currentLecon?.videos?.length" class="mb-8">
+                  <h4 class="flex items-center text-lg font-bold text-gray-800 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                     </svg>
-                    Quiz : {{ currentLecon.quiz.titre }}
+                    Vidéos
                   </h4>
-                </div>
-                
-                <!-- Quiz validation status -->
-                <div class="p-4 border-b border-gray-100" 
-                     :class="quizValidationStatus[currentLecon.quiz.id] === true 
-                            ? 'bg-green-50'
-                            : quizValidationStatus[currentLecon.quiz.id] === false
-                              ? 'bg-red-50'
-                              : 'bg-blue-50'">
-                  <div class="flex items-center">
-                    <svg v-if="quizValidationStatus[currentLecon.quiz.id] === true" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <svg v-else-if="quizValidationStatus[currentLecon.quiz.id] === false" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span class="font-medium" :class="{
-                      'text-green-700': quizValidationStatus[currentLecon.quiz.id] === true,
-                      'text-red-700': quizValidationStatus[currentLecon.quiz.id] === false,
-                      'text-blue-700': quizValidationStatus[currentLecon.quiz.id] === undefined
-                    }">
-                      {{ getQuizStatusMessage(currentLecon.quiz.id) }}
-                    </span>
+                  
+                  <div class="grid gap-6">
+                    <div v-for="video in currentLecon?.videos" :key="video.id"
+                        class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
+                      <div class="p-4 border-b border-gray-100">
+                        <h5 class="font-semibold text-gray-800">{{ video.titre || 'Vidéo' }}</h5>
+                      </div>
+                      <video controls class="w-full">
+                        <source :src="video.url" type="video/mp4">
+                        Votre navigateur ne supporte pas la lecture de vidéos.
+                      </video>
+                    </div>
                   </div>
                 </div>
                 
-                <!-- Quiz Questions -->
-                <div class="p-6">
-                  <div v-if="currentLecon.quiz.questions?.length" class="space-y-8">
-                    <div v-for="(question, questionIndex) in currentLecon.quiz.questions" :key="question.id"
-                         class="bg-gray-50 rounded-lg p-5 border border-gray-200">
-                      <p class="text-gray-800 font-medium mb-4 flex">
-                        <span class="bg-purple-600 text-white h-6 w-6 rounded-full flex items-center justify-center mr-3 shrink-0">
-                          {{ questionIndex + 1 }}
-                        </span>
-                        {{ question.contenu }}
-                      </p>
-                      
-                      <div class="ml-9 space-y-3">
-                        <div v-for="reponse in question.reponses" :key="reponse.id"
-                             class="flex items-start">
-                          <div class="flex h-5 items-center">
-                            <input type="radio"
-                                   :id="`reponse-${reponse.id}`"
-                                   :name="`question-${question.id}`"
-                                   :value="reponse.id"
-                                   v-model="userAnswers[question.id]"
-                                   class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
-                          </div>
-                          <label :for="`reponse-${reponse.id}`" class="ml-3 block text-sm font-medium leading-6 text-gray-700">
-                            {{ reponse.contenu }}
-                          </label>
-                        </div>
+                <!-- Documents -->
+                <div v-if="currentLecon?.documents?.length" class="mb-8">
+                  <h4 class="flex items-center text-lg font-bold text-gray-800 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Documents
+                  </h4>
+                  
+                  <div class="grid gap-6">
+                    <div v-for="document in currentLecon.documents" :key="document.id"
+                        class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-100">
+                      <div class="p-4 border-b border-gray-100">
+                        <h5 class="font-semibold text-gray-800">{{ document.titre || 'Document' }}</h5>
+                      </div>
+                      <div class="h-[400px] resize-y overflow-auto">
+                        <embed :src="document.url" class="w-full h-full" type="application/pdf" />
                       </div>
                     </div>
                   </div>
-                  
-                  <!-- Quiz Submit Button -->
-                  <div class="mt-6">
-                    <button v-if="quizValidationStatus[currentLecon.quiz.id] !== true"
-                            @click="submitAnswers"
-                            class="w-full py-3 px-5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                </div>
+                
+                <!-- Quiz Section -->
+                <div v-if="currentLecon?.quiz" class="bg-white rounded-xl shadow-lg border border-purple-100 overflow-hidden mt-8">
+                  <!-- Quiz Header -->
+                  <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
+                    <h4 class="text-lg font-bold text-white flex items-center">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Quiz : {{ currentLecon.quiz.titre }}
+                    </h4>
+                  </div>
+                  
+                  <!-- Quiz validation status -->
+                  <div class="p-4 border-b border-gray-100" 
+                      :class="quizValidationStatus[currentLecon.quiz.id] === true 
+                              ? 'bg-green-50'
+                              : quizValidationStatus[currentLecon.quiz.id] === false
+                                ? 'bg-red-50'
+                                : 'bg-blue-50'">
+                    <div class="flex items-center">
+                      <svg v-if="quizValidationStatus[currentLecon.quiz.id] === true" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Soumettre les réponses
-                    </button>
-                    
-                    <div v-else class="w-full py-3 px-5 bg-green-100 text-green-700 font-semibold rounded-lg shadow-md flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                      <svg v-else-if="quizValidationStatus[currentLecon.quiz.id] === false" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Quiz validé ! Vous pouvez passer à la suite
+                      <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span class="font-medium" :class="{
+                        'text-green-700': quizValidationStatus[currentLecon.quiz.id] === true,
+                        'text-red-700': quizValidationStatus[currentLecon.quiz.id] === false,
+                        'text-blue-700': quizValidationStatus[currentLecon.quiz.id] === undefined
+                      }">
+                        {{ getQuizStatusMessage(currentLecon.quiz.id) }}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- Quiz Questions -->
+                  <div class="p-6">
+                    <div v-if="currentLecon.quiz.questions?.length" class="space-y-8">
+                      <div v-for="(question, questionIndex) in currentLecon.quiz.questions" :key="question.id"
+                          class="bg-gray-50 rounded-lg p-5 border border-gray-200">
+                        <p class="text-gray-800 font-medium mb-4 flex">
+                          <span class="bg-purple-600 text-white h-6 w-6 rounded-full flex items-center justify-center mr-3 shrink-0">
+                            {{ questionIndex + 1 }}
+                          </span>
+                          {{ question.contenu }}
+                        </p>
+                        
+                        <div class="ml-9 space-y-3">
+                          <div v-for="reponse in question.reponses" :key="reponse.id"
+                              class="flex items-start">
+                            <div class="flex h-5 items-center">
+                              <input type="radio"
+                                    :id="`reponse-${reponse.id}`"
+                                    :name="`question-${question.id}`"
+                                    :value="reponse.id"
+                                    v-model="userAnswers[question.id]"
+                                    class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600">
+                            </div>
+                            <label :for="`reponse-${reponse.id}`" class="ml-3 block text-sm font-medium leading-6 text-gray-700">
+                              {{ reponse.contenu }}
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- Quiz Submit Button -->
+                    <div class="mt-6">
+                      <button v-if="quizValidationStatus[currentLecon.quiz.id] !== true"
+                              @click="submitAnswers"
+                              class="w-full py-3 px-5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:from-purple-600 hover:to-pink-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Soumettre les réponses
+                      </button>
+                      
+                      <div v-else class="w-full py-3 px-5 bg-green-100 text-green-700 font-semibold rounded-lg shadow-md flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Quiz validé ! Vous pouvez passer à la suite
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        
-        <!-- Navigation Controls -->
-        <div class="mt-8 space-y-4">
-          <!-- Message d'avertissement si quiz non validé -->
-          <div v-if="currentLecon?.quiz && !canNavigateToNextLecon && currentLeconIndex.value < totalLecons - 1" 
-               class="p-3 text-sm text-center text-amber-700 bg-amber-100 rounded-lg border border-amber-200">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            Vous devez valider ce quiz pour continuer à la leçon suivante
-          </div>
           
-          <!-- Navigation des leçons -->
-          <div class="flex justify-between">
-            <button
-              @click="prevLecon"
-              :disabled="currentLeconIndex.value === 0"
-              class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          <!-- Navigation Controls -->
+          <div class="mt-8 space-y-4">
+            <!-- Message d'avertissement si quiz non validé -->
+            <div v-if="currentLecon?.quiz && !canNavigateToNextLecon && currentLeconIndex.value < totalLecons - 1" 
+                class="p-3 text-sm text-center text-amber-700 bg-amber-100 rounded-lg border border-amber-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              Leçon précédente
-            </button>
-            <button
-              @click="nextLecon"
-              :disabled="!canNavigateToNextLecon || currentLeconIndex.value >= totalLecons - 1"
-              class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
-            >
-              Leçon suivante
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+              Vous devez valider ce quiz pour continuer à la leçon suivante
+            </div>
+            
+            <!-- Navigation des leçons -->
+            <div class="flex justify-between">
+              <button
+                @click="prevLecon"
+                :disabled="currentLeconIndex.value === 0"
+                class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Leçon précédente
+              </button>
+              <button
+                @click="nextLecon"
+                :disabled="!canNavigateToNextLecon || currentLeconIndex.value >= totalLecons - 1"
+                class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+              >
+                Leçon suivante
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Navigation des modules -->
+            <div class="flex justify-between">
+              <button
+                @click="prevModule"
+                :disabled="currentModuleIndex.value === 0"
+                class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                Module précédent
+              </button>
+              <button
+                @click="nextModule"
+                :disabled="currentModuleIndex.value >= totalModules - 1"
+                class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
+              >
+                Module suivant
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
-          
-          <!-- Navigation des modules -->
-          <div class="flex justify-between">
-            <button
-              @click="prevModule"
-              :disabled="currentModuleIndex.value === 0"
-              class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-              </svg>
-              Module précédent
-            </button>
-            <button
-              @click="nextModule"
-              :disabled="currentModuleIndex.value >= totalModules - 1"
-              class="flex items-center px-4 py-2 bg-white text-gray-700 font-medium rounded-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-all"
-            >
-              Module suivant
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
+        </template>
         
         <!-- Admin Actions -->
-        <div v-if="formation?.id" class="mt-8">
+        <div v-if="formation?.id && (user?.role === 'admin' || user?.role === 'formateur')" class="mt-8">
           <div class="grid grid-cols-2 gap-4">
             <Link :href="`/formations/${formation.id}/edit`" 
                   class="py-3 px-5 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold rounded-lg hover:from-amber-500 hover:to-amber-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
@@ -298,7 +328,7 @@
               </svg>
               Modifier
             </Link>
-      
+    
             <button 
               @click="deleteFormation"
               class="py-3 px-5 bg-gradient-to-r from-red-500 to-rose-500 text-white font-semibold rounded-lg hover:from-red-600 hover:to-rose-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
@@ -309,6 +339,9 @@
               Supprimer
             </button>
           </div>
+        </div>
+        <div v-else class="mt-8">
+          <p class="text-center text-gray-500">© 2023 Formation. Tous droits réservés.</p>
         </div>
       </div>
     </div>
@@ -332,6 +365,65 @@
       </div>
     </div>
     
+    <!-- Modal de paiement -->
+<div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-8 max-w-md w-full transform transition-all animate-fadeIn">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold text-gray-800">Inscription à la formation</h3>
+      <button @click="showPaymentModal = false" class="text-gray-500 hover:text-gray-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    
+    <div class="mb-6">
+      <p class="text-gray-700 mb-4">Vous êtes sur le point de vous inscrire à la formation:</p>
+      <p class="text-lg font-semibold text-gray-800 mb-2">{{ formation?.titre }}</p>
+      <p class="text-xl font-bold text-indigo-600">{{ formation?.prix }} €</p>
+    </div>
+    
+    <form @submit.prevent="processPayment">
+      <div class="space-y-4">
+        <div>
+          <label for="card-number" class="block text-sm font-medium text-gray-700 mb-1">Numéro de carte</label>
+          <input type="text" id="card-number" v-model="paymentInfo.cardNumber" placeholder="1234 5678 9012 3456" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="expiry" class="block text-sm font-medium text-gray-700 mb-1">Date d'expiration</label>
+            <input type="text" id="expiry" v-model="paymentInfo.expiry" placeholder="MM/AA" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+          <div>
+            <label for="cvc" class="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+            <input type="text" id="cvc" v-model="paymentInfo.cvc" placeholder="123" 
+                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+          </div>
+        </div>
+        
+        <div>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom sur la carte</label>
+          <input type="text" id="name" v-model="paymentInfo.name" placeholder="John Doe" 
+                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+      </div>
+      
+      <div class="mt-8">
+        <button type="submit" 
+                class="w-full py-3 px-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Payer {{ formation?.prix }} €
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+    
   </AuthenticatedLayout>
 </template>
 
@@ -339,9 +431,9 @@
 import { defineProps, reactive, computed, ref } from "vue";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import axios from 'axios';
-
 import { Link } from '@inertiajs/vue3';
 import { router, usePage } from "@inertiajs/vue3";
+import { onMounted } from "vue";
 
 // Définition des types
 interface Reponse {
@@ -408,6 +500,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  role: string;
 }
 
 interface PageProps {
@@ -416,10 +509,116 @@ interface PageProps {
   };
   [key: string]: any;
 }
+const showPaymentModal = ref(false);
+const hasUserPaid = ref(false);
+const paymentProcessing = ref(false);
+const paymentInfo = reactive({
+  cardNumber: '',
+  expiry: '',
+  cvc: '',
+  name: ''
+});
+const checkUserPaymentStatus = async () => {
+  if (!userId.value || !props.formation?.id) {
+    hasUserPaid.value = false;
+    return;
+  }
+  
+  try {
+    const response = await axios.get(`/check-payment-status/${userId.value}/${props.formation.id}`);
+    hasUserPaid.value = response.data.hasPaid;
+  } catch (error) {
+    console.error('Error checking payment status:', error);
+    hasUserPaid.value = false;
+  }
+};
+
+// Add this to validate payment info
+const validatePaymentInfo = () => {
+  // Basic validation for demonstration purposes
+  if (!paymentInfo.cardNumber || paymentInfo.cardNumber.length < 16) {
+    alert("Veuillez entrer un numéro de carte valide");
+    return false;
+  }
+  
+  if (!paymentInfo.expiry || !paymentInfo.expiry.includes('/')) {
+    alert("Veuillez entrer une date d'expiration valide (MM/AA)");
+    return false;
+  }
+  
+  if (!paymentInfo.cvc || paymentInfo.cvc.length < 3) {
+    alert("Veuillez entrer un code CVC valide");
+    return false;
+  }
+  
+  if (!paymentInfo.name) {
+    alert("Veuillez entrer le nom sur la carte");
+    return false;
+  }
+  
+  return true;
+};
+
+// Payment processing function
+const processPayment = async () => {
+  if (!validatePaymentInfo()) return;
+  
+  if (!userId.value || !props.formation?.id) {
+    alert("Erreur: Utilisateur ou formation non disponible");
+    return;
+  }
+  
+  paymentProcessing.value = true;
+  
+  try {
+    const paymentData = {
+      userId: userId.value,
+      formationId: props.formation.id,
+      amount: props.formation.prix,
+      // Include masked card data for record-keeping
+      cardLast4: paymentInfo.cardNumber.slice(-4),
+      cardName: paymentInfo.name
+    };
+    
+    const response = await axios.post('/process-payment', paymentData);
+    
+    if (response.data.success) {
+      alert("Paiement réussi ! Vous avez maintenant accès au contenu complet de la formation.");
+      showPaymentModal.value = false;
+      hasUserPaid.value = true;
+      
+      // Reset payment form
+      paymentInfo.cardNumber = '';
+      paymentInfo.expiry = '';
+      paymentInfo.cvc = '';
+      paymentInfo.name = '';
+    } else {
+      alert("Erreur de paiement: " + response.data.message);
+    }
+  } catch (error) {
+    console.error('Erreur lors du traitement du paiement:', error);
+    
+    if (error.response && error.response.data && error.response.data.message) {
+      alert(`Erreur: ${error.response.data.message}`);
+    } else {
+      alert("Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.");
+    }
+  } finally {
+    paymentProcessing.value = false;
+  }
+};
+
+// Add this to fetch data on component mount
+// Run this when the component is mounted
+onMounted(() => {
+  checkUserPaymentStatus();
+});
 
 // Récupération de l'utilisateur connecté
 const page = usePage<PageProps>();
 const userId = computed(() => page.props.auth.user?.id);
+const user = computed(() => page.props.auth.user);
+const role = computed(() => user.value?.role || 'user'); 
 
 // Propriétés reçues depuis Laravel (Inertia.js)
 const props = defineProps<{ formation?: Formation }>();

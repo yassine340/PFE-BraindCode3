@@ -13,18 +13,14 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('user_id'); // Foreign key to users table
-            $table->unsignedBigInteger('formation_id'); // Foreign key to formations table
-            $table->decimal('montant', 10, 2); // Payment amount
-            $table->string('methode'); // Payment method
-            $table->string('status'); // Payment status
-            $table->date('date'); // Payment date
-            $table->boolean('confirmation')->default(false); // Confirmation status
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('formation_id')->constrained()->onDelete('cascade');
+            $table->decimal('montant', 10, 2);
+            $table->string('methode');
+            $table->string('status');
+            $table->timestamp('date');
+            $table->string('confirmation')->nullable();
             $table->timestamps();
-
-            // Foreign key constraints
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('formation_id')->references('id')->on('formations')->onDelete('cascade');
         });
     }
 

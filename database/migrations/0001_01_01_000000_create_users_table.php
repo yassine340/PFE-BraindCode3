@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->nullable(); // Téléphone personnel
+            $table->string('image_url')->nullable(); // URL de l'image de profil
 
             // Champs spécifiques aux startups
             $table->string('startup_name')->nullable();

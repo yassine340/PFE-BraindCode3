@@ -19,6 +19,7 @@ use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ReponseController;
 use App\Http\Controllers\GamificationController;
 use App\Models\Question;
+use App\Http\Controllers\PaymentController;
 
 
 // Route pour afficher la page d'accueil
@@ -258,3 +259,10 @@ Route::get('/stats', function () {
     return Inertia::render('Stats');
 })->middleware(['auth'])->name('user.stats');
 
+// API Routes for payment
+Route::get('/check-payment-status/{userId}/{formationId}', [PaymentController::class, 'checkPaymentStatus']);
+Route::post('/process-payment', [PaymentController::class, 'processPayment']);
+
+// Optional additional routes for administration
+Route::get('/payments', [PaymentController::class, 'index'])->middleware('auth:api');
+Route::get('/user/{userId}/payments', [PaymentController::class, 'getUserPayments'])->middleware('auth:api');

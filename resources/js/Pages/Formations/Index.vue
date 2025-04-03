@@ -59,9 +59,9 @@
                 </svg>
               </div>
               
-              <!-- Badge prix/statut (optionnel) -->
+              <!--date of creation-->
               <div class="absolute top-3 right-3 bg-white bg-opacity-90 rounded-full py-1 px-3 text-sm font-semibold text-indigo-600 shadow-sm">
-                Populaire
+                {{ formatDateTime(formation.created_at) }}
               </div>
             </div>
             
@@ -148,6 +148,10 @@ import { Link, router, usePage } from '@inertiajs/vue3';
 import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { computed, ref } from 'vue';
+import dayjs from 'dayjs';
+
+
+// Function to format the date using dayjs
 
 // Définir le type User
 interface User {
@@ -156,6 +160,9 @@ interface User {
   email: string;
   role: string;
 }
+const formatDateTime = (date) => {
+    return dayjs(date).format('DD/MM/YYYY HH:mm'); // Example output: "31/07/2024 14:30"
+};
 
 // Définir les propriétés de la page
 interface PageProps {
@@ -170,9 +177,17 @@ interface Formation {
   id: number;
   titre: string;
   description?: string;
+  created_at: string;
   image_formation: string | null;
   duree?: string;
-  modules?: any[];
+  modules?: Module[];
+}
+interface Module {
+  id: number;
+  titre: string;
+  description?: string;
+  ordre: number;
+  duree_estimee: number;
 }
 const searchQuery = ref("");
 const searchFormations = async () => {

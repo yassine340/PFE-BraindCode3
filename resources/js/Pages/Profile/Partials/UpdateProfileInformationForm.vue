@@ -23,6 +23,7 @@ const form = useForm({
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
+    phone: user.phone,
 });
 </script>
 
@@ -68,7 +69,6 @@ const form = useForm({
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
                     </div>
-                    
                     <div class="field-content">
                         <InputLabel for="last_name" value="Nom" class="field-label" />
                         <TextInput
@@ -84,7 +84,29 @@ const form = useForm({
                         <InputError class="field-error" :message="form.errors.last_name" />
                     </div>
                 </div>
-
+                <!-- Téléphone -->
+                <div class="form-field" :class="{ 'field-focused': formFocus === 'phone' }">
+                    <div class="field-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 16.92V19a2 2 0 0 1-2 2 19.6 19.6 0 0 1-8.5-3.3A19.6 19.6 0 0 1 3.3 10.5 19.6 19.6 0 0 1 0 2a2 2 0 0 1 2-2h2.08a2 2 0 0 1 2 .5l2.3 2.3a2 2 0 0 1 .5 2L7.5 7.5a16 16 0 0 0 9 9l1.7-1.7a2 2 0 0 1 2-.5l2.3 2.3a2 2 0 0 1 .5 2z"></path>
+                        </svg>
+                    </div>
+                    <div class="field-content">
+                        <InputLabel for="phone" value="téléphone" class="field-label" />
+                        <TextInput
+                            id="phone"
+                            type="text"
+                            class="field-input"
+                            v-model="form.phone"
+                            required
+                            @focus="formFocus = 'phone'"
+                            @blur="formFocus = null"
+                            autocomplete="phone"
+                        />
+                        <InputError class="field-error" :message="form.errors.phone" />
+                    </div>
+                </div>
+                
                 <!-- Email -->
                 <div class="form-field form-field-full" :class="{ 'field-focused': formFocus === 'email' }">
                     <div class="field-icon">
