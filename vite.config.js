@@ -17,4 +17,7 @@ export default defineConfig({
             },
         }),
     ],
+    define: {
+        'process.env': process.env, // Optional: Expose process.env if needed
+    },
 });

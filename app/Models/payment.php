@@ -9,13 +9,12 @@ use App\Models\Formation;
 class Payment extends Model
 {
     protected $fillable = [
-        'user_id',
+        'user_id', 
         'formation_id',
-        'montant',
-        'methode',
-        'status',
-        'date',
-        'confirmation',
+        'amount', 
+        'currency', 
+        'stripe_payment_intent_id', 
+        'status'
     ];
 
     public function user()

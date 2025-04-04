@@ -72,17 +72,18 @@
               <p class="text-gray-600 mb-6">Pour accéder au contenu complet de cette formation, veuillez procéder au paiement.</p>
             </div>
             
-            <div class="flex justify-center">
-              <button 
-                @click="showPaymentModal = true"
-                class="py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-                S'inscrire à cette formation - {{ formation?.prix }} €
-              </button>
-            </div>
+            <!-- Keep your existing button -->
+          <div class="flex justify-center">
+            <button 
+              @click="showPaymentModal = true"
+              class="py-3 px-6 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              S'inscrire à cette formation - {{ formation?.prix }} €
+            </button>
+          </div>
           </div>
         </div>
         
@@ -364,8 +365,7 @@
         </button>
       </div>
     </div>
-    
-    <!-- Modal de paiement -->
+    <!-- Payment Modal with Postal Code -->
 <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-xl p-8 max-w-md w-full transform transition-all animate-fadeIn">
     <div class="flex justify-between items-center mb-6">
@@ -385,55 +385,58 @@
     
     <form @submit.prevent="processPayment">
       <div class="space-y-4">
+        <!-- Name field -->
         <div>
-          <label for="card-number" class="block text-sm font-medium text-gray-700 mb-1">Numéro de carte</label>
-          <input type="text" id="card-number" v-model="paymentInfo.cardNumber" placeholder="1234 5678 9012 3456" 
-                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+          <label for="card-holder-name" class="block text-sm font-medium text-gray-700 mb-1">Nom sur la carte</label>
+          <input 
+            id="card-holder-name" 
+            v-model="paymentInfo.name" 
+            type="text" 
+            placeholder="John Doe"
+            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            required
+          />
         </div>
         
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="expiry" class="block text-sm font-medium text-gray-700 mb-1">Date d'expiration</label>
-            <input type="text" id="expiry" v-model="paymentInfo.expiry" placeholder="MM/AA" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-          </div>
-          <div>
-            <label for="cvc" class="block text-sm font-medium text-gray-700 mb-1">CVC</label>
-            <input type="text" id="cvc" v-model="paymentInfo.cvc" placeholder="123" 
-                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-          </div>
-        </div>
         
+        <!-- Stripe Card Element -->
         <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nom sur la carte</label>
-          <input type="text" id="name" v-model="paymentInfo.name" placeholder="John Doe" 
-                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+          <label for="card-element" class="block text-sm font-medium text-gray-700 mb-1">Informations de carte</label>
+          <div id="card-element" class="p-3 border border-gray-300 rounded-lg bg-white"></div>
+          <div v-if="paymentError" class="mt-2 text-sm text-red-600">{{ paymentError }}</div>
         </div>
       </div>
       
       <div class="mt-8">
         <button type="submit" 
-                class="w-full py-3 px-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                :disabled="!cardElementComplete || paymentProcessing"
+                class="w-full py-3 px-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center disabled:opacity-50">
+          <svg v-if="paymentProcessing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          Payer {{ formation?.prix }} €
+          {{ paymentProcessing ? 'Paiement en cours...' : `Payer ${formation?.prix} €` }}
         </button>
       </div>
     </form>
   </div>
 </div>
-    
   </AuthenticatedLayout>
 </template>
 
 <script setup lang="ts">
-import { defineProps, reactive, computed, ref } from "vue";
+import { defineProps, reactive, computed, ref, watch } from "vue";
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import axios from 'axios';
 import { Link } from '@inertiajs/vue3';
 import { router, usePage } from "@inertiajs/vue3";
 import { onMounted } from "vue";
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe('pk_test_51R9NvWKl52qI29Hq2IJtzjQIqtqc4lTBar7hDW0jPkPlrdCiX7x8LHVb35ZtwTCG0wOoSfk6SSj6G8Jq6tJQTihO00Xet74o7d');
 
 // Définition des types
 interface Reponse {
@@ -512,12 +515,21 @@ interface PageProps {
 const showPaymentModal = ref(false);
 const hasUserPaid = ref(false);
 const paymentProcessing = ref(false);
+const paymentError = ref('');
+const clientSecret = ref('');
+
+// Add payment info reactive object for name and postal code
 const paymentInfo = reactive({
-  cardNumber: '',
-  expiry: '',
-  cvc: '',
-  name: ''
+  name: '',
 });
+
+// Card element status
+const cardElementComplete = ref(false);
+const cardElement = ref(null);
+const stripe = ref(null);
+const elements = ref(null);
+
+// Check payment status as before
 const checkUserPaymentStatus = async () => {
   if (!userId.value || !props.formation?.id) {
     hasUserPaid.value = false;
@@ -533,87 +545,152 @@ const checkUserPaymentStatus = async () => {
   }
 };
 
-// Add this to validate payment info
-const validatePaymentInfo = () => {
-  // Basic validation for demonstration purposes
-  if (!paymentInfo.cardNumber || paymentInfo.cardNumber.length < 16) {
-    alert("Veuillez entrer un numéro de carte valide");
-    return false;
-  }
+// Setup Stripe when the payment modal is shown
+const setupStripe = async () => {
+  paymentProcessing.value = false;
+  paymentError.value = '';
   
-  if (!paymentInfo.expiry || !paymentInfo.expiry.includes('/')) {
-    alert("Veuillez entrer une date d'expiration valide (MM/AA)");
-    return false;
-  }
-  
-  if (!paymentInfo.cvc || paymentInfo.cvc.length < 3) {
-    alert("Veuillez entrer un code CVC valide");
-    return false;
-  }
-  
-  if (!paymentInfo.name) {
-    alert("Veuillez entrer le nom sur la carte");
-    return false;
-  }
-  
-  return true;
-};
+  // Reset form fields
+  paymentInfo.name = '';
 
-// Payment processing function
-const processPayment = async () => {
-  if (!validatePaymentInfo()) return;
   
   if (!userId.value || !props.formation?.id) {
-    alert("Erreur: Utilisateur ou formation non disponible");
+    paymentError.value = "Erreur: Utilisateur ou formation non disponible";
     return;
   }
   
-  paymentProcessing.value = true;
-  
   try {
-    const paymentData = {
+    // Create payment intent on the server
+    const response = await axios.post('/stripe/create-intent', {
       userId: userId.value,
       formationId: props.formation.id,
-      amount: props.formation.prix,
-      // Include masked card data for record-keeping
-      cardLast4: paymentInfo.cardNumber.slice(-4),
-      cardName: paymentInfo.name
-    };
-    
-    const response = await axios.post('/process-payment', paymentData);
-    
-    if (response.data.success) {
-      alert("Paiement réussi ! Vous avez maintenant accès au contenu complet de la formation.");
-      showPaymentModal.value = false;
-      hasUserPaid.value = true;
+      amount: props.formation.prix * 100,
       
-      // Reset payment form
-      paymentInfo.cardNumber = '';
-      paymentInfo.expiry = '';
-      paymentInfo.cvc = '';
-      paymentInfo.name = '';
+    });
+    console.log("User ID:", userId.value);
+    console.log("Formation ID:", props.formation.id);
+   console.log("Amount (in cents):", props.formation.prix * 100);
+        clientSecret.value = response.data.clientSecret;
+    
+    // Initialize Stripe
+    stripe.value = await stripePromise;
+    elements.value = stripe.value.elements();
+    
+    // Create card element
+    cardElement.value = elements.value.create('card', {
+      style: {
+        base: {
+          fontSize: '16px',
+          color: '#32325d',
+          '::placeholder': {
+            color: '#aab7c4',
+          },
+        },
+        invalid: {
+          color: '#fa755a',
+          iconColor: '#fa755a',
+        },
+      },
+    });
+    
+    // Mount the card element to the DOM
+    setTimeout(() => {
+      cardElement.value.mount('#card-element');
+      cardElement.value.on('change', (event) => {
+        cardElementComplete.value = event.complete;
+        if (event.error) {
+          paymentError.value = event.error.message;
+        } else {
+          paymentError.value = '';
+        }
+      });
+    }, 100);
+    
+  } catch (error) {
+    console.error('Error setting up Stripe:', error);
+    paymentError.value = "Erreur lors de l'initialisation du paiement";
+  }
+};
+
+// Process payment with Stripe
+const processPayment = async () => {
+  if (!cardElementComplete.value) {
+    paymentError.value = "Veuillez compléter les informations de carte";
+    return;
+  }
+  
+  if (!paymentInfo.name) {
+    paymentError.value = "Veuillez entrer le nom sur la carte";
+    return;
+  }
+  
+  
+  paymentProcessing.value = true;
+  paymentError.value = '';
+  
+  try {
+    console.log("Attempting payment with client secret:", clientSecret.value ? "Available" : "Missing");
+    console.log("Card element complete:", cardElementComplete.value);
+    
+    // Confirm payment with Stripe.js
+    const result = await stripe.value.confirmCardPayment(clientSecret.value, {
+      payment_method: {
+        card: cardElement.value,
+        billing_details: {
+          name: paymentInfo.name,
+        }
+      },
+    });
+    
+    console.log("Payment result:", result);
+    
+    if (result.error) {
+      // Show error to customer
+      console.error("Stripe error:", result.error);
+      paymentError.value = result.error.message;
+      paymentProcessing.value = false;
     } else {
-      alert("Erreur de paiement: " + response.data.message);
+      if (result.paymentIntent.status === 'succeeded') {
+        // Payment successful - confirm on server
+        console.log("Payment succeeded, confirming with server...");
+        
+        const confirmResponse = await axios.post('/stripe/confirm-payment', {
+          paymentIntentId: result.paymentIntent.id,
+          userId: userId.value,
+          formationId: props.formation.id
+        });
+        
+        console.log("Server confirmation response:", confirmResponse.data);
+        
+        if (confirmResponse.data.success) {
+          hasUserPaid.value = true;
+          showPaymentModal.value = false;
+          alert("Paiement réussi ! Vous avez maintenant accès au contenu complet de la formation.");
+        } else {
+          paymentError.value = "Le paiement a été effectué mais une erreur est survenue lors de l'enregistrement.";
+        }
+      } else {
+        paymentError.value = "Le paiement est en attente ou a échoué.";
+      }
     }
   } catch (error) {
-    console.error('Erreur lors du traitement du paiement:', error);
-    
-    if (error.response && error.response.data && error.response.data.message) {
-      alert(`Erreur: ${error.response.data.message}`);
-    } else {
-      alert("Une erreur est survenue lors du traitement du paiement. Veuillez réessayer.");
-    }
+    console.error('Error processing payment:', error);
+    paymentError.value = "Une erreur est survenue lors du traitement du paiement: " + (error.message || "Erreur inconnue");
   } finally {
     paymentProcessing.value = false;
   }
 };
-
 // Add this to fetch data on component mount
-// Run this when the component is mounted
 onMounted(() => {
   checkUserPaymentStatus();
 });
 
+// Add this to handle the modal being opened
+watch(showPaymentModal, (newVal) => {
+  if (newVal === true) {
+    setupStripe();
+  }
+});
 // Récupération de l'utilisateur connecté
 const page = usePage<PageProps>();
 const userId = computed(() => page.props.auth.user?.id);

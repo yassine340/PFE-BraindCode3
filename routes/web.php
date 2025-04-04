@@ -259,10 +259,19 @@ Route::get('/stats', function () {
     return Inertia::render('Stats');
 })->middleware(['auth'])->name('user.stats');
 
-// API Routes for payment
+Route::post('/stripe/create-intent', [PaymentController::class, 'createStripeIntent']);
+Route::post('/stripe/confirm-payment', [PaymentController::class, 'confirmStripePayment']);
 Route::get('/check-payment-status/{userId}/{formationId}', [PaymentController::class, 'checkPaymentStatus']);
-Route::post('/process-payment', [PaymentController::class, 'processPayment']);
-
-// Optional additional routes for administration
-Route::get('/payments', [PaymentController::class, 'index'])->middleware('auth:api');
-Route::get('/user/{userId}/payments', [PaymentController::class, 'getUserPayments'])->middleware('auth:api');
+Route::get('/test-stripe', function() {
+    try {
+        Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+        $intent = Stripe\PaymentIntent::create([
+            'amount' => 1000, // $10.00
+            'currency' => 'eur',
+        ]);
+        
+        return ['success' => true, 'client_secret' => $intent->client_secret];
+    } catch (\Exception $e) {
+        return ['error' => $e->getMessage()];
+    }
+});
