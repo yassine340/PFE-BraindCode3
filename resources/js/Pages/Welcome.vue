@@ -123,7 +123,7 @@ const themeClasses = computed(() => ({
         class="text-3xl font-black tracking-tight transform transition hover:scale-105 cursor-pointer" 
         :class="themeClasses.text.primary"
       >
-        Braindcode
+      <img src="/image/logos/BraindCode.png" class="img-fluid" style="width: 200px;" alt="Logo" />
       </h1>
 
       <div class="flex items-center space-x-1">

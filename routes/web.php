@@ -259,19 +259,15 @@ Route::get('/stats', function () {
     return Inertia::render('Stats');
 })->middleware(['auth'])->name('user.stats');
 
+// Route pour afficher les statistiques de l'utilisateur
 Route::post('/stripe/create-intent', [PaymentController::class, 'createStripeIntent']);
 Route::post('/stripe/confirm-payment', [PaymentController::class, 'confirmStripePayment']);
 Route::get('/check-payment-status/{userId}/{formationId}', [PaymentController::class, 'checkPaymentStatus']);
-Route::get('/test-stripe', function() {
-    try {
-        Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-        $intent = Stripe\PaymentIntent::create([
-            'amount' => 1000, // $10.00
-            'currency' => 'eur',
-        ]);
-        
-        return ['success' => true, 'client_secret' => $intent->client_secret];
-    } catch (\Exception $e) {
-        return ['error' => $e->getMessage()];
-    }
-});
+
+// Add PayPal routes
+Route::post('/paypal/create-order', [PaymentController::class, 'createPayPalOrder']);
+Route::post('/paypal/capture-order', [PaymentController::class, 'capturePayPalOrder']);
+
+// PayPal redirect routes
+Route::get('paypal/success', [PaymentController::class, 'paypalSuccess'])->name('paypal.success');
+Route::get('paypal/cancel', [PaymentController::class, 'paypalCancel'])->name('paypal.cancel');

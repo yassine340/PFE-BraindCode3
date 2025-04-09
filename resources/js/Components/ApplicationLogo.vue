@@ -7,6 +7,7 @@
     
     <!-- The name (text) below the SVG icon -->
     <h6 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mt-2">BraindCode</h6>
+    
   </div>
 </template>
 

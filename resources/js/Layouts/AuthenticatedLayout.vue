@@ -128,10 +128,10 @@ const logout = async () => {
         'w-72 translate-x-0': isSidebarOpen,
       }"
     >
-      <div class="relative h-full w-72 bg-gradient-to-b from-[#1e2433] to-[#272f42] text-white p-6 overflow-y-auto shadow-xl">
+      <div class="relative h-full w-72 bg-white text-gray-900 p-6 overflow-y-auto shadow-xl">
         <div class="flex items-center mb-8">
           <Link :href="route('dashboard')" class="text-xl font-bold">
-            <ApplicationLogo class="block h-10 w-auto fill-current text-blue-400" />
+            <img src="/image/logos/BraindCode.png" class="img-fluid" style="width: 200px;" alt="Logo" />
           </Link>
         </div>
 
@@ -353,6 +353,49 @@ const logout = async () => {
 </template>
 
 <style scoped>
+/* Main sidebar text color */
+.sidebar {
+  color: #99d3ff;
+}
+
+/* General text elements in sidebar */
+.sidebar a,
+.sidebar button,
+.sidebar label,
+.sidebar span,
+.sidebar div {
+  color: #99d3ff;
+}
+
+/* Active navigation items */
+.sidebar .bg-blue-600\/20,
+.sidebar a.router-link-active,
+.sidebar a.router-link-exact-active {
+  color: #99d3ff !important;
+}
+
+/* Secondary text with slight opacity */
+.sidebar .text-gray-400 {
+  color: #99d3ff;
+  opacity: 0.7;
+}
+
+/* Exception for the user profile section at bottom */
+.sidebar .absolute.bottom-0 * {
+  color: inherit; /* Reset color inheritance for profile section */
+}
+
+.sidebar .absolute.bottom-0 .text-gray-400 {
+  color: rgba(156, 163, 175, var(--tw-text-opacity)); /* Original gray-400 color */
+  opacity: 1;
+}
+
+.sidebar .absolute.bottom-0 .text-blue-300,
+.sidebar .absolute.bottom-0 .font-semibold {
+  color: rgba(147, 197, 253, var(--tw-text-opacity)); /* Original blue-300 color */
+}
+
+/* Original sidebar toggle button styles */
 .sidebar-toggle-button {
   position: fixed;
   top: 1.5rem;

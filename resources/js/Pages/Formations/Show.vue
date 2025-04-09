@@ -365,11 +365,11 @@
         </button>
       </div>
     </div>
-    <!-- Payment Modal with Postal Code -->
+    <!-- Payment Modal -->
 <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-  <div class="bg-white rounded-xl p-8 max-w-md w-full transform transition-all animate-fadeIn">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-xl font-bold text-gray-800">Inscription à la formation</h3>
+  <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold">Paiement pour {{ props.formation.titre }}</h2>
       <button @click="showPaymentModal = false" class="text-gray-500 hover:text-gray-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -378,50 +378,104 @@
     </div>
     
     <div class="mb-6">
-      <p class="text-gray-700 mb-4">Vous êtes sur le point de vous inscrire à la formation:</p>
-      <p class="text-lg font-semibold text-gray-800 mb-2">{{ formation?.titre }}</p>
-      <p class="text-xl font-bold text-indigo-600">{{ formation?.prix }} €</p>
-    </div>
-    
-    <form @submit.prevent="processPayment">
-      <div class="space-y-4">
-        <!-- Name field -->
-        <div>
-          <label for="card-holder-name" class="block text-sm font-medium text-gray-700 mb-1">Nom sur la carte</label>
+      <div class="text-lg font-semibold mb-2">Prix: {{ props.formation.prix }}€</div>
+      
+      <!-- Payment Method Selection Tabs -->
+      <div class="border-b border-gray-200 mb-4">
+        <div class="flex">
+          <button 
+            @click="changePaymentMethod('stripe')" 
+            :class="[
+              'py-2 px-4 border-b-2 font-medium text-sm',
+              paymentMethod === 'stripe' 
+                ? 'border-indigo-500 text-indigo-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 3H6C4.346 3 3 4.346 3 6V18C3 19.654 4.346 21 6 21H18C19.654 21 21 19.654 21 18V6C21 4.346 19.654 3 18 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M3 10H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Carte de crédit
+            </div>
+          </button>
+          <button 
+            @click="changePaymentMethod('paypal')" 
+            :class="[
+              'py-2 px-4 border-b-2 font-medium text-sm',
+              paymentMethod === 'paypal' 
+                ? 'border-indigo-500 text-indigo-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            ]"
+          >
+            <div class="flex items-center">
+              <svg class="w-6 h-6 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 7C19 10.866 15.866 14 12 14C8.134 14 5 10.866 5 7C5 3.134 8.134 0 12 0C15.866 0 19 3.134 19 7Z" fill="#0070E0"/>
+                <path d="M7 14H17C18.657 14 20 15.343 20 17V21C20 22.657 18.657 24 17 24H7C5.343 24 4 22.657 4 21V17C4 15.343 5.343 14 7 14Z" fill="#003087"/>
+              </svg>
+              PayPal
+            </div>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Payment Error Messages -->
+      <div v-if="paymentError" class="mb-4 p-3 bg-red-100 text-red-700 rounded">
+        {{ paymentError }}
+      </div>
+      
+      <!-- Stripe Payment Form -->
+      <div v-if="paymentMethod === 'stripe'" class="space-y-4">
+        <div class="space-y-2">
+          <label for="card-holder-name" class="block text-sm font-medium text-gray-700">Nom sur la carte</label>
           <input 
             id="card-holder-name" 
             v-model="paymentInfo.name" 
             type="text" 
-            placeholder="John Doe"
-            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-            required
+            class="w-full p-2 border border-gray-300 rounded" 
+            placeholder="Nom complet"
           />
         </div>
-        
-        
-        <!-- Stripe Card Element -->
-        <div>
-          <label for="card-element" class="block text-sm font-medium text-gray-700 mb-1">Informations de carte</label>
-          <div id="card-element" class="p-3 border border-gray-300 rounded-lg bg-white"></div>
-          <div v-if="paymentError" class="mt-2 text-sm text-red-600">{{ paymentError }}</div>
+
+        <div class="space-y-2">
+          <label for="card-element" class="block text-sm font-medium text-gray-700">Informations de carte</label>
+          <div id="card-element" class="p-2 border border-gray-300 rounded"></div>
         </div>
-      </div>
-      
-      <div class="mt-8">
-        <button type="submit" 
-                :disabled="!cardElementComplete || paymentProcessing"
-                class="w-full py-3 px-5 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center disabled:opacity-50">
-          <svg v-if="paymentProcessing" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {{ paymentProcessing ? 'Paiement en cours...' : `Payer ${formation?.prix} €` }}
+        
+        <button 
+          @click="processStripePayment" 
+          :disabled="paymentProcessing || !cardElementComplete" 
+          class="w-full py-2 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded"
+          :class="{ 'opacity-50 cursor-not-allowed': paymentProcessing || !cardElementComplete }"
+        >
+          <span v-if="paymentProcessing">Traitement en cours...</span>
+          <span v-else>Payer {{ props.formation.prix }}€</span>
         </button>
       </div>
-    </form>
+      
+      <!-- PayPal Payment -->
+      <div v-else-if="paymentMethod === 'paypal'" class="space-y-4">
+        <div class="p-4 border border-gray-300 rounded bg-gray-50 text-center">
+          <p class="mb-2">Vous allez être redirigé vers PayPal pour finaliser votre paiement.</p>
+          <p class="text-sm text-gray-500">Le montant à payer est {{ props.formation.prix }}€</p>
+        </div>
+        
+        <button 
+          @click="redirectToPayPal" 
+          :disabled="paymentProcessing || !paypalApprovalUrl" 
+          class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded"
+          :class="{ 'opacity-50 cursor-not-allowed': paymentProcessing || !paypalApprovalUrl }"
+        >
+          <span v-if="paymentProcessing">Traitement en cours...</span>
+          <span v-else>Payer avec PayPal</span>
+        </button>
+      </div>
+    </div>
+    
+    <div class="text-xs text-gray-500 text-center">
+      <p>Tous les paiements sont sécurisés et cryptés.</p>
+    </div>
   </div>
 </div>
   </AuthenticatedLayout>
@@ -517,6 +571,9 @@ const hasUserPaid = ref(false);
 const paymentProcessing = ref(false);
 const paymentError = ref('');
 const clientSecret = ref('');
+const paymentMethod = ref('stripe'); // 'stripe' or 'paypal'
+const paypalOrderId = ref('');
+const paypalApprovalUrl = ref('');
 
 // Add payment info reactive object for name and postal code
 const paymentInfo = reactive({
@@ -545,6 +602,17 @@ const checkUserPaymentStatus = async () => {
   }
 };
 
+// Method to change payment method
+const changePaymentMethod = (method) => {
+  paymentMethod.value = method;
+  
+  if (method === 'stripe' && showPaymentModal.value) {
+    setupStripe();
+  } else if (method === 'paypal' && showPaymentModal.value) {
+    setupPayPal();
+  }
+};
+
 // Setup Stripe when the payment modal is shown
 const setupStripe = async () => {
   paymentProcessing.value = false;
@@ -552,7 +620,6 @@ const setupStripe = async () => {
   
   // Reset form fields
   paymentInfo.name = '';
-
   
   if (!userId.value || !props.formation?.id) {
     paymentError.value = "Erreur: Utilisateur ou formation non disponible";
@@ -565,12 +632,12 @@ const setupStripe = async () => {
       userId: userId.value,
       formationId: props.formation.id,
       amount: props.formation.prix * 100,
-      
     });
+    
     console.log("User ID:", userId.value);
     console.log("Formation ID:", props.formation.id);
-   console.log("Amount (in cents):", props.formation.prix * 100);
-        clientSecret.value = response.data.clientSecret;
+    console.log("Amount (in cents):", props.formation.prix * 100);
+    clientSecret.value = response.data.clientSecret;
     
     // Initialize Stripe
     stripe.value = await stripePromise;
@@ -595,15 +662,18 @@ const setupStripe = async () => {
     
     // Mount the card element to the DOM
     setTimeout(() => {
-      cardElement.value.mount('#card-element');
-      cardElement.value.on('change', (event) => {
-        cardElementComplete.value = event.complete;
-        if (event.error) {
-          paymentError.value = event.error.message;
-        } else {
-          paymentError.value = '';
-        }
-      });
+      const cardElementContainer = document.getElementById('card-element');
+      if (cardElementContainer && cardElement.value) {
+        cardElement.value.mount('#card-element');
+        cardElement.value.on('change', (event) => {
+          cardElementComplete.value = event.complete;
+          if (event.error) {
+            paymentError.value = event.error.message;
+          } else {
+            paymentError.value = '';
+          }
+        });
+      }
     }, 100);
     
   } catch (error) {
@@ -612,8 +682,37 @@ const setupStripe = async () => {
   }
 };
 
+// Setup PayPal
+const setupPayPal = async () => {
+  paymentProcessing.value = false;
+  paymentError.value = '';
+  paypalOrderId.value = '';
+  paypalApprovalUrl.value = '';
+  
+  if (!userId.value || !props.formation?.id) {
+    paymentError.value = "Erreur: Utilisateur ou formation non disponible";
+    return;
+  }
+  
+  try {
+    // Create PayPal order on the server
+    const response = await axios.post('/paypal/create-order', {
+      userId: userId.value,
+      formationId: props.formation.id,
+      amount: props.formation.prix * 100, // Keep consistent with stripe (cents)
+    });
+    
+    paypalOrderId.value = response.data.orderId;
+    paypalApprovalUrl.value = response.data.approvalUrl;
+    
+  } catch (error) {
+    console.error('Error setting up PayPal:', error);
+    paymentError.value = "Erreur lors de l'initialisation du paiement PayPal";
+  }
+};
+
 // Process payment with Stripe
-const processPayment = async () => {
+const processStripePayment = async () => {
   if (!cardElementComplete.value) {
     paymentError.value = "Veuillez compléter les informations de carte";
     return;
@@ -623,7 +722,6 @@ const processPayment = async () => {
     paymentError.value = "Veuillez entrer le nom sur la carte";
     return;
   }
-  
   
   paymentProcessing.value = true;
   paymentError.value = '';
@@ -680,18 +778,94 @@ const processPayment = async () => {
     paymentProcessing.value = false;
   }
 };
+
+// Process PayPal payment - redirect to PayPal
+const redirectToPayPal = () => {
+  if (paypalApprovalUrl.value) {
+    // Store the orderId in localStorage or sessionStorage to retrieve after redirect
+    sessionStorage.setItem('paypalOrderId', paypalOrderId.value);
+    sessionStorage.setItem('userId', userId.value.toString());
+    sessionStorage.setItem('formationId', props.formation.id.toString());
+    
+    // Redirect to PayPal approval URL
+    window.location.href = paypalApprovalUrl.value;
+  } else {
+    paymentError.value = "Erreur lors de la redirection vers PayPal";
+  }
+};
+
+// Handle PayPal return (this needs to be called on your return page)
+const handlePayPalReturn = async () => {
+  const orderId = sessionStorage.getItem('paypalOrderId');
+  const storedUserId = sessionStorage.getItem('userId');
+  const storedFormationId = sessionStorage.getItem('formationId');
+  
+  if (!orderId || !storedUserId || !storedFormationId) {
+    console.error('Missing PayPal return information');
+    return;
+  }
+  
+  try {
+    paymentProcessing.value = true;
+    
+    const response = await axios.post('/paypal/capture-order', {
+      orderId: orderId,
+      userId: storedUserId,
+      formationId: storedFormationId
+    });
+    
+    if (response.data.success) {
+      hasUserPaid.value = true;
+      showPaymentModal.value = false;
+      alert("Paiement PayPal réussi ! Vous avez maintenant accès au contenu complet de la formation.");
+      
+      // Clean up session storage
+      sessionStorage.removeItem('paypalOrderId');
+      sessionStorage.removeItem('userId');
+      sessionStorage.removeItem('formationId');
+    } else {
+      paymentError.value = "Une erreur est survenue lors de la confirmation du paiement PayPal.";
+    }
+  } catch (error) {
+    console.error('Error capturing PayPal payment:', error);
+    paymentError.value = "Une erreur est survenue lors du traitement du paiement PayPal: " + (error.response?.data?.message || error.message || "Erreur inconnue");
+  } finally {
+    paymentProcessing.value = false;
+  }
+};
+
+// Check for PayPal return parameters on mount
+const checkForPayPalReturn = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paypalPaymentStatus = urlParams.get('paypal_status');
+  
+  if (paypalPaymentStatus === 'success') {
+    handlePayPalReturn();
+  } else if (paypalPaymentStatus === 'cancel') {
+    paymentError.value = "Paiement PayPal annulé.";
+    // Clean up session storage
+    sessionStorage.removeItem('paypalOrderId');
+    sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('formationId');
+  }
+};
+
 // Add this to fetch data on component mount
 onMounted(() => {
   checkUserPaymentStatus();
+  checkForPayPalReturn();
 });
 
 // Add this to handle the modal being opened
 watch(showPaymentModal, (newVal) => {
   if (newVal === true) {
-    setupStripe();
+    if (paymentMethod.value === 'stripe') {
+      setupStripe();
+    } else if (paymentMethod.value === 'paypal') {
+      setupPayPal();
+    }
   }
-});
-// Récupération de l'utilisateur connecté
+});// Récupération de l'utilisateur connecté
 const page = usePage<PageProps>();
 const userId = computed(() => page.props.auth.user?.id);
 const user = computed(() => page.props.auth.user);

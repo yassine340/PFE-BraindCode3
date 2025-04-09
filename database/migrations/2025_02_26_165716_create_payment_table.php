@@ -17,7 +17,14 @@ return new class extends Migration
             $table->foreignId('formation_id')->constrained()->onDelete('cascade');
             $table->decimal('amount', 10, 2); // Changed from 'montant' to match controller
             $table->string('currency'); // Added to match controller
-            $table->string('stripe_payment_intent_id')->unique(); // Added missing column
+            $table->string('stripe_payment_intent_id')->nullable();
+            
+            // Add PayPal specific fields
+            $table->string('paypal_order_id')->nullable();
+            $table->string('paypal_capture_id')->nullable();
+            
+            // Add payment_method field to distinguish between payment providers
+            $table->string('payment_method')->default('stripe');
             $table->string('status');
             $table->timestamps();
         });
@@ -28,6 +35,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('payments');
+        Schema::table('payments', function (Blueprint $table) {
+            // Remove the columns added
+            $table->dropColumn('paypal_order_id');
+            $table->dropColumn('paypal_capture_id');
+            $table->dropColumn('payment_method');
+            
+            // Revert stripe_payment_intent_id to non-nullable
+            $table->string('stripe_payment_intent_id')->nullable(false)->change();
+        });
     }
 };
