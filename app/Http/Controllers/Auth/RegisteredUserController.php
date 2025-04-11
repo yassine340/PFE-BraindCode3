@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -29,7 +30,6 @@ class RegisteredUserController extends Controller
      * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request)
-
     {
         $request->validate([
             'first_name'    => 'required|string|max:255',
@@ -44,7 +44,22 @@ class RegisteredUserController extends Controller
             'startup_phone' => 'nullable|string|max:20',
             'speciality'    => 'nullable|string|max:255',
             'description'   => 'nullable|string',
+            'cv_file'       => $request->role === 'formateur' ? 'required|file|mimes:pdf,doc,docx|max:5120' : 'nullable',
         ]);
+        
+        // Initialiser le chemin du CV à null
+        $cvFilePath = null;
+        
+        // Traiter l'upload du CV pour les formateurs
+        if ($request->role === 'formateur' && $request->hasFile('cv_file')) {
+            $cvFilePath = $request->file('cv_file')->storeAs(
+                'cv_files',
+                time() . '_' . $request->file('cv_file')->getClientOriginalName(),
+                'public'
+            );
+            
+            $cvFilePath = '/storage/' . $cvFilePath;
+        }
     
         $user = User::create([
             'first_name'    => $request->first_name,
@@ -60,6 +75,7 @@ class RegisteredUserController extends Controller
             'speciality'    => $request->speciality,
             'description'   => $request->description,
             'status'        => $request->role === 'formateur' ? 'en_attente' : null,
+            'cv_file'       => $cvFilePath,
         ]);
     
         if ($user->role !== 'formateur') {
@@ -76,5 +92,4 @@ class RegisteredUserController extends Controller
             'message' => session('message')
         ]);
     }
-    
 }

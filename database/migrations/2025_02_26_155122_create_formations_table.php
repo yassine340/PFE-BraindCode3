@@ -17,6 +17,9 @@ return new class extends Migration
             $table->double('prix')->nullable();
             $table->boolean('estcertifiante')->nullable();
             $table->string('image_formation')->nullable(); 
+            $table->boolean('est_valide')->default(false); // Nouvelle colonne
+            $table->boolean('est_publiee')->default(false); // Pour contrôler la publication
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });
     }

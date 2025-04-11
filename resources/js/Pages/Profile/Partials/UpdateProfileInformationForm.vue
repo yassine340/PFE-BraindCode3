@@ -1,11 +1,10 @@
-.vue
 <script setup>
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Link, useForm, usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 
 defineProps({
     mustVerifyEmail: {
@@ -18,12 +17,65 @@ defineProps({
 
 const user = usePage().props.auth.user;
 const formFocus = ref(null);
+// Prévisualisation de l'image
+const imagePreview = ref(user.profile_image || null);
+
+// Affichage des informations de débogage au chargement
+onMounted(() => {
+    console.log('Informations utilisateur:', user);
+    console.log('Image de profil actuelle:', user.profile_image);
+});
 
 const form = useForm({
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
+    profile_image: null, // Ajout du champ pour l'image
 });
+
+// Fonction améliorée pour gérer la prévisualisation de l'image
+const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    console.log('Fichier sélectionné:', file);
+    
+    if (file) {
+        form.profile_image = file;
+        imagePreview.value = URL.createObjectURL(file);
+        console.log('Image ajoutée au formulaire:', form.profile_image);
+    }
+};
+
+// Fonction dédiée pour la soumission du formulaire
+const submitForm = () => {
+    // Créer un nouvel objet form qui utilise les valeurs actuelles
+    let submitForm = useForm({
+        _method: 'PATCH',
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        profile_image: form.profile_image
+    });
+    
+    // Utiliser post() au lieu de patch() avec le nouvel objet
+    submitForm.post(route('profile.update'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onError: (errors) => {
+            console.error('Erreurs de validation:', errors);
+            // Copier les erreurs vers l'objet form original pour l'affichage
+            form.clearErrors();
+            Object.keys(errors).forEach(key => {
+                form.setError(key, errors[key]);
+            });
+        },
+        onSuccess: () => {
+            console.log('Profil mis à jour avec succès');
+            form.reset('profile_image');
+            // Facultatif: recharger pour voir les changements
+            window.location.reload();
+        }
+    });
+};
 </script>
 
 <template>
@@ -33,7 +85,41 @@ const form = useForm({
             <div class="profile-decoration"></div>
         </div>
 
-        <form @submit.prevent="form.patch(route('profile.update'))" class="profile-form">
+        <!-- Utiliser la nouvelle fonction submitForm et ajouter enctype -->
+        <form @submit.prevent="submitForm" class="profile-form" enctype="multipart/form-data">
+            <!-- Section d'image de profil -->
+            <div class="profile-image-container">
+                <div class="profile-image-wrapper">
+                    <img v-if="imagePreview" :src="imagePreview" alt="Image de profil" class="profile-avatar" />
+                    <div v-else class="profile-avatar-placeholder">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="profile-image-upload">
+                    <label for="profile_image" class="upload-button">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span>{{ imagePreview ? 'Changer l\'image' : 'Ajouter une photo' }}</span>
+                    </label>
+                    <input 
+                        id="profile_image" 
+                        name="profile_image"
+                        type="file" 
+                        class="hidden-input"
+                        @change="handleImageChange"
+                        accept="image/*"
+                    />
+                    <InputError class="upload-error" :message="form.errors.profile_image" />
+                </div>
+            </div>
+
             <div class="form-fields-container">
                 <!-- Prénom -->
                 <div class="form-field" :class="{ 'field-focused': formFocus === 'first_name' }">
@@ -181,6 +267,7 @@ const form = useForm({
 </template>
 
 <style scoped>
+/* Les styles restent identiques */
 .profile-card {
     background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
     border-radius: 16px;
@@ -223,6 +310,95 @@ const form = useForm({
     height: 4px;
     background: linear-gradient(90deg, #8b5cf6, #6d28d9);
     border-radius: 2px;
+}
+
+/* Styles pour l'image de profil */
+.profile-image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    text-align: center;
+}
+
+.profile-image-wrapper {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    margin-bottom: 1.25rem;
+    border-radius: 50%;
+    box-shadow: 0 8px 16px rgba(124, 58, 237, 0.15);
+}
+
+.profile-avatar {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid #8b5cf6;
+    transition: all 0.3s;
+}
+
+.profile-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 4px solid #8b5cf6;
+}
+
+.profile-avatar-placeholder svg {
+    width: 60px;
+    height: 60px;
+    stroke-width: 1.5px;
+}
+
+.profile-image-upload {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.upload-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f5f3ff;
+    color: #6d28d9;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.625rem 1.25rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid #e9d5ff;
+    box-shadow: 0 2px 5px rgba(124, 58, 237, 0.1);
+}
+
+.upload-button:hover {
+    background-color: #ede9fe;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.15);
+}
+
+.upload-button svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2px;
+}
+
+.hidden-input {
+    display: none;
+}
+
+.upload-error {
+    color: #ef4444;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
 }
 
 .profile-form {
@@ -576,6 +752,26 @@ const form = useForm({
         background-color: #064e3b;
         border-color: #10b981;
         color: #a7f3d0;
+    }
+    
+    /* Mode sombre pour l'image de profil */
+    .profile-avatar {
+        border-color: #6d28d9;
+    }
+    
+    .profile-avatar-placeholder {
+        background: linear-gradient(135deg, #4c1d95, #6d28d9);
+        border-color: #6d28d9;
+    }
+    
+    .upload-button {
+        background-color: #1f2937;
+        color: #c4b5fd;
+        border-color: #4c1d95;
+    }
+    
+    .upload-button:hover {
+        background-color: #2d3748;
     }
 }
 </style>

@@ -186,8 +186,21 @@ const logout = async () => {
           <label class="block text-xs text-gray-400 font-medium mb-3 pl-1">NAVIGATION</label>
           
           <!-- Lien Statistiques - Disponible pour tous les utilisateurs -->
-         
+          <NavLink
+            :href="route('user.stats')"
+            :active="route().current('user.stats')"
+            class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+            :class="{ 'bg-blue-600/20 text-blue-300': route().current('user.stats') }"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" 
+                :class="{ 'text-blue-400': route().current('user.stats') }"
+                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Mes statistiques
+          </NavLink>
           
+          <!-- Navigation pour les formateurs -->
           <template v-if="role === 'formateur'">
             <NavLink 
               v-for="link in [
@@ -211,12 +224,14 @@ const logout = async () => {
             </NavLink>
           </template>
           
+          <!-- Navigation pour les admins -->
           <template v-else-if="role === 'admin'">
             <NavLink 
               v-for="link in [
                 { route: 'DashboardAdmin', label: 'Dashboard Admin', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
                 { route: 'formateur.en.attente', label: 'Formateurs en attente', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' },
-                { route: 'formateurs.index', label: 'Formateurs', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
+                { route: 'formateurs.index', label: 'Formateurs', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+                { route: 'admin.users', label: 'Gestion des utilisateurs', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' }
               ]"
               :key="link.route"
               :href="route(link.route)"
@@ -231,19 +246,73 @@ const logout = async () => {
               </svg>
               {{ link.label }}
             </NavLink>
-            <NavLink
-            :href="route('user.stats')"
-            :active="route().current('user.stats')"
-            class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
-            :class="{ 'bg-blue-600/20 text-blue-300': route().current('user.stats') }"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" 
-                 :class="{ 'text-blue-400': route().current('user.stats') }"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            Mes statistiques
-          </NavLink>
+            
+            <div class="relative mt-2">
+              <Dropdown align="right" width="48">
+                <template #trigger>
+                  <button class="w-full text-left flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                    Autres pages
+                    <svg class="ml-auto h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </template>
+                <template #content>
+                  <DropdownLink @click="navigateToRoute('categories.index')" class="hover:bg-blue-500/10 transition-colors duration-150">
+                    <div class="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                      </svg>
+                      Catégories
+                    </div>
+                  </DropdownLink>
+                  <DropdownLink @click="navigateToRoute('formations.index')" class="hover:bg-blue-500/10 transition-colors duration-150">
+                    <div class="flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Formations
+                    </div>
+                  </DropdownLink>
+                </template>
+              </Dropdown>
+            </div>
+          </template>
+          
+          <!-- Navigation pour les utilisateurs standards -->
+          <template v-else>
+            <NavLink 
+              :href="route('dashboard')"
+              :active="route().current('dashboard')"
+              class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+              :class="{ 'bg-blue-600/20 text-blue-300': route().current('dashboard') }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" 
+                   :class="{ 'text-blue-400': route().current('dashboard') }"
+                   fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Tableau de bord
+            </NavLink>
+            
+            <NavLink 
+              :href="route('formations.index')"
+              :active="route().current('formations.index')"
+              class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+              :class="{ 'bg-blue-600/20 text-blue-300': route().current('formations.index') }"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" 
+                   :class="{ 'text-blue-400': route().current('formations.index') }"
+                   fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Formations
+            </NavLink>
+            
+            <!-- Autres pages dropdown pour utilisateurs -->
             <div class="relative mt-2">
               <Dropdown align="right" width="48">
                 <template #trigger>

@@ -112,5 +112,82 @@ public function updateFormateur(Request $request, $id)
     return redirect()->route('formateurs.index')->with('success', 'Formateur modifié avec succès.');
 }
 
+/**
+ * Afficher tous les utilisateurs de la plateforme
+ */
+public function allUsers(Request $request)
+{
+       // Vérification du rôle directement dans le contrôleur
+       if (auth()->user()->role !== 'admin') {
+        return redirect()->route('dashboard')
+            ->with('error', 'Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
+    }
+    // Récupérer tous les utilisateurs avec pagination
+    $query = User::query();
     
+    // Filtrage par rôle si spécifié dans la requête
+    if ($request->has('role') && $request->role) {
+        $query->where('role', $request->role);
+    }
+    
+    // Recherche par nom/prénom/email si spécifié
+    if ($request->has('search') && $request->search) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('last_name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
+    }
+    
+    // Tri des résultats
+    $sortField = $request->input('sort_field', 'created_at');
+    $sortDirection = $request->input('sort_direction', 'desc');
+    $query->orderBy($sortField, $sortDirection);
+    
+    // Récupérer les utilisateurs avec pagination
+    $users = $query->paginate(10)->withQueryString();
+    
+    // Nombres d'utilisateurs par rôle (pour les statistiques)
+    $userCounts = [
+        'total' => User::count(),
+        'user' => User::where('role', 'user')->count(),
+        'formateur' => User::where('role', 'formateur')->count(),
+        'startup' => User::where('role', 'startup')->count(),
+    ];
+    
+    return Inertia::render('Admin/AllUsers', [
+        'users' => $users,
+        'filters' => [
+            'role' => $request->role,
+            'search' => $request->search,
+            'sort_field' => $sortField,
+            'sort_direction' => $sortDirection,
+        ],
+        'userCounts' => $userCounts
+    ]);
+}
+public function show(User $user)
+{
+    return Inertia::render('Admin/UserShow', [
+        'user' => $user
+    ]);
+}
+
+// Afficher le formulaire d'édition
+public function edit(User $user)
+{
+    return Inertia::render('Admin/UserEdit', [
+        'user' => $user
+    ]);
+}
+
+// Supprimer un utilisateur
+public function destroy(User $user)
+{
+    $user->delete();
+    
+    return redirect()->route('admin.users')
+        ->with('success', 'Utilisateur supprimé avec succès');
+}
 }

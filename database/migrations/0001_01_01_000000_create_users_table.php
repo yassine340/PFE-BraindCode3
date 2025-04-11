@@ -19,6 +19,9 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone')->nullable(); // Téléphone personnel
+    // Ajout du champ pour l'image utilisateur
+    $table->string('profile_image')->nullable(); // Pour stocker le chemin vers l'image
+    $table->string('cv_file')->nullable()->after('profile_image'); // Pour stocker le chemin vers le fichier CV
 
             // Champs spécifiques aux startups
             $table->string('startup_name')->nullable();

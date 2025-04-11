@@ -18,6 +18,7 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ReponseController;
 use App\Http\Controllers\GamificationController;
+use App\Http\Controllers\VideoProgressController;
 use App\Models\Question;
 
 
@@ -128,7 +129,9 @@ Route::get('/DashboardFormateur', function () {
 
 // Afficher toutes les formations (index)
 Route::get('/formations', [FormationController::class, 'index'])->name('formations.index');
-
+// Route pour publier/dépublier une formation
+Route::put('/formations/{id}/publish', [FormationController::class, 'togglePublication'])
+    ->name('formations.publish');
 //************************************************************************************************* */
 
 // Afficher le formulaire de création d'une formation
@@ -164,6 +167,8 @@ Route::get('/formationscat', function (Request $request) {
         'categories' => $categories, // Pass categories to the view
     ]);
 });
+Route::put('/formations/{id}/validate', [FormationController::class, 'validateFormation'])
+    ->name('formations.validate');
 
 
 // Route pour afficher la liste des catégories
@@ -258,3 +263,23 @@ Route::get('/stats', function () {
     return Inertia::render('Stats');
 })->middleware(['auth'])->name('user.stats');
 
+Route::middleware('auth')->group(function () {
+    Route::post('/video-progress', [VideoProgressController::class, 'store']);
+    Route::get('/video-progress/{videoId}', [VideoProgressController::class, 'show']);
+    // Route pour afficher tous les utilisateurs (admin)
+Route::get('/admin/users', [AdminController::class, 'allUsers'])
+->name('admin.users')
+->middleware(['verified' ]);
+  // Nouvelles routes à ajouter
+  Route::get('/admin/users/{user}', [AdminController::class, 'show'])
+  ->name('admin.users.show')
+  ->middleware(['verified']);
+  
+Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])
+  ->name('admin.users.edit')
+  ->middleware(['verified']);
+  
+Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])
+  ->name('admin.users.delete')
+  ->middleware(['verified']);
+});

@@ -14,7 +14,11 @@ class Formation extends Model
         'prix',
         'estcertifiante',
         'image_formation',
-        'category_id'
+        'category_id',
+        'est_valide', // Ajout du nouveau champ
+        'est_publiee', // Ajout du champ de publication
+        'user_id'  // Ajout du champ user_id pour le formateur
+
     ];
 
     public function modules()
@@ -28,4 +32,9 @@ class Formation extends Model
     public function category() {
         return $this->belongsTo(Category::class);
     }
+      // Relation avec l'utilisateur (formateur)
+      public function user()
+      {
+          return $this->belongsTo(User::class);
+      }
 }

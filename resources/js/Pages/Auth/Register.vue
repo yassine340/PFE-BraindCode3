@@ -22,18 +22,28 @@ const form = useForm({
     startup_email: '',
     startup_phone: '',
     speciality: '',
-    description: ''
+    description: '',
+    cv_file: null // Ajout du champ pour le CV
 });
 
 const submit = () => {
     form.post(route('register'), {
-        onFinish: () => form.reset('password', 'password_confirmation'),
+        forceFormData: true, // Nécessaire pour l'upload de fichiers
+        onFinish: () => form.reset('password', 'password_confirmation', 'cv_file'),
     });
 };
 
 const selectRole = (role) => {
     selectedRole.value = role;
     form.role = role;
+};
+
+// Fonction pour gérer la sélection du fichier CV
+const handleCvFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        form.cv_file = file;
+    }
 };
 
 const roleOptions = [
@@ -133,7 +143,7 @@ const roleOptions = [
                 </div>
             </div>
 
-            <form @submit.prevent="submit" class="space-y-4">
+            <form @submit.prevent="submit" class="space-y-4" enctype="multipart/form-data">
                 <!-- Common Fields -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -266,6 +276,41 @@ const roleOptions = [
                             ></textarea>
                             <InputError class="mt-2" :message="form.errors.description" />
                         </div>
+                        
+                        <!-- Nouveau champ pour l'upload de CV -->
+                        <div>
+                            <InputLabel for="cv_file" value="CV (Format PDF, DOC, DOCX)" />
+                            <div class="mt-1 flex items-center">
+                                <label 
+                                    for="cv_file" 
+                                    class="cursor-pointer flex items-center justify-center px-4 py-2 bg-blue-500/20 text-blue-500 rounded-lg border border-blue-500/30 hover:bg-blue-500/30 transition-all duration-300"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <span v-if="!form.cv_file">Sélectionner votre CV</span>
+                                    <span v-else>{{ form.cv_file.name }}</span>
+                                </label>
+                                <input
+                                    id="cv_file"
+                                    name="cv_file"
+                                    type="file"
+                                    class="hidden"
+                                    @input="handleCvFileChange"
+                                    accept=".pdf,.doc,.docx"
+                                />
+                            </div>
+                            <p class="text-xs text-white/60 mt-1">Formats acceptés: PDF, DOC, DOCX (5MB max)</p>
+                            <InputError class="mt-2" :message="form.errors.cv_file" />
+                            
+                            <!-- Affiche le nom du fichier sélectionné -->
+                            <div v-if="form.cv_file" class="mt-2 text-sm text-blue-400 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                Fichier sélectionné: {{ form.cv_file.name }}
+                            </div>
+                        </div>
                     </div>
                 </transition>
 
@@ -320,7 +365,7 @@ const roleOptions = [
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {{ form.processing ? "Registering..." : "Register" }}
+                        {{ form.processing ? "Inscription en cours..." : "S'inscrire" }}
                     </button>
                 </div>
             </form>

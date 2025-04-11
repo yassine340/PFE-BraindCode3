@@ -30,12 +30,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'description',
         'role', // ✅ Ajout du champ rôle
         'status', // ✅ Ajout du champ status
+        'profile_image', // Ajout du champ pour l'image de profil
+        'cv_file',
     ];
 
     /**
      * Les attributs cachés pour la sérialisation.
      *
-     * @var array<string>
+     * @var array<string> 
      */
     protected $hidden = [
         'password',
@@ -68,4 +70,8 @@ class User extends Authenticatable implements MustVerifyEmail
         // ✅ Pour les autres rôles, utiliser le comportement normal
         return !is_null($this->email_verified_at);
     }
+    public function getNameAttribute()
+{
+    return "{$this->first_name} {$this->last_name}";
+}
 }

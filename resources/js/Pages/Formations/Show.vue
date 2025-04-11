@@ -104,10 +104,10 @@
                     <div class="p-4 border-b border-gray-100">
                       <h5 class="font-semibold text-gray-800">{{ video.titre || 'Vidéo' }}</h5>
                     </div>
-                    <video controls class="w-full">
-                      <source :src="video.url" type="video/mp4">
-                      Votre navigateur ne supporte pas la lecture de vidéos.
-                    </video>
+                    <VideoPlayer 
+                        :videoId="video.id"
+                        :videoUrl="video.url"
+                      />
                   </div>
                 </div>
               </div>
@@ -288,8 +288,8 @@
           </div>
         </div>
         
-        <!-- Admin Actions -->
-        <div v-if="formation?.id" class="mt-8">
+        <!-- Admin Actions - Modifié pour masquer pour les utilisateurs/startups -->
+        <div v-if="formation?.id && role !== 'user' && role !== 'startup'" class="mt-8">
           <div class="grid grid-cols-2 gap-4">
             <Link :href="`/formations/${formation.id}/edit`" 
                   class="py-3 px-5 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-semibold rounded-lg hover:from-amber-500 hover:to-amber-600 shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center">
@@ -342,7 +342,7 @@ import axios from 'axios';
 
 import { Link } from '@inertiajs/vue3';
 import { router, usePage } from "@inertiajs/vue3";
-
+import VideoPlayer from '@/Components/VideoPlayer.vue';
 // Définition des types
 interface Reponse {
   id: number;
@@ -408,6 +408,7 @@ interface User {
   id: number;
   name: string;
   email: string;
+  role: string; // Ajout de la propriété role
 }
 
 interface PageProps {
@@ -420,6 +421,8 @@ interface PageProps {
 // Récupération de l'utilisateur connecté
 const page = usePage<PageProps>();
 const userId = computed(() => page.props.auth.user?.id);
+// Récupérer le rôle de l'utilisateur
+const role = computed(() => page.props.auth.user?.role || 'user');
 
 // Propriétés reçues depuis Laravel (Inertia.js)
 const props = defineProps<{ formation?: Formation }>();
