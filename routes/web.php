@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use Doctrine\DBAL\Logging\Middleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -61,6 +62,9 @@ Route::middleware('auth')->group(function () {
 Route::get('/dashboardAdmin', function () {
     return Inertia::render('DashboardAdmin');
 })->middleware(['auth'])->name('dashboardAdmin');
+    Route::get('/payments', [AdminController::class, 'index']);
+    Route::get('/payments/statistics', [AdminController::class, 'statistics']);
+    Route::get('/payments/{id}', [AdminController::class, 'show']);
 
 require __DIR__.'/auth.php';
 
@@ -68,9 +72,6 @@ require __DIR__.'/auth.php';
 
 Route::get('/auth/facebook', [FacebookController::class, 'facebookpage'])->name('auth.facebook');
 Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
-Route::get('/Slideshow', function () {
-    return Inertia::render('Slideshow');
-})->name('Slideshow');
 
 //************************************************************************************************* */
 
@@ -139,6 +140,8 @@ Route::post('/formations', [FormationController::class, 'store'])->name('formati
 // Afficher toutes les formations (index)
 Route::get('/formations/index', [FormationController::class, 'index'])->name('formations.index');
 // Afficher une formation (GET)
+Route::get('/formations/count', [AdminController::class, 'countFormations'])
+->Middleware(['verified']);
 Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');
 // Supprimer une formation (DELETE)
 Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name('formations.destroy');
@@ -263,11 +266,39 @@ Route::get('/stats', function () {
 Route::post('/stripe/create-intent', [PaymentController::class, 'createStripeIntent']);
 Route::post('/stripe/confirm-payment', [PaymentController::class, 'confirmStripePayment']);
 Route::get('/check-payment-status/{userId}/{formationId}', [PaymentController::class, 'checkPaymentStatus']);
+Route::post('/stripe/record-failed-payment', [PaymentController::class, 'recordFailedStripePayment']);
+
 
 // Add PayPal routes
 Route::post('/paypal/create-order', [PaymentController::class, 'createPayPalOrder']);
 Route::post('/paypal/capture-order', [PaymentController::class, 'capturePayPalOrder']);
+Route::post('/paypal/record-failed-payment', [PaymentController::class, 'recordFailedPayPalPayment']);
 
 // PayPal redirect routes
 Route::get('paypal/success', [PaymentController::class, 'paypalSuccess'])->name('paypal.success');
 Route::get('paypal/cancel', [PaymentController::class, 'paypalCancel'])->name('paypal.cancel');
+
+//admin transaction
+Route::get('/PaymentTransactionsAdmin',function () {
+    return Inertia::render('Admin/PaymentTransactionsAdmin');
+})->name('PaymentTransactionsAdmin');
+
+    // Route pour afficher tous les utilisateurs (admin)
+    Route::get('/admin/users', [AdminController::class, 'allUsers'])
+    ->name('admin.users')
+    ->middleware(['verified' ]);
+      // Nouvelles routes à ajouter
+      Route::get('/admin/users/{user}', [AdminController::class, 'showUser'])
+      ->name('admin.users.show')
+      ->middleware(['verified']);
+      
+    Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])
+      ->name('admin.users.edit')
+      ->middleware(['verified']);
+      
+    Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])
+      ->name('admin.users.delete')
+      ->middleware(['verified']);
+    Route::get('/users/count', [AdminController::class, 'countUser'])
+      ->Middleware(['verified']);
+ 

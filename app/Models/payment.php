@@ -12,6 +12,13 @@ class Payment extends Model
         'user_id', 
         'formation_id',
         'amount', 
+        'pays',
+        'ville',
+        'adresse',
+        'code_postal',
+        'payment_method',
+        'paypal_order_id',
+        'paypal_capture_id',
         'currency', 
         'stripe_payment_intent_id', 
         'status'

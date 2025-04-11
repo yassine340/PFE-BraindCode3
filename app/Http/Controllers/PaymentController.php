@@ -8,8 +8,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
+use App\Mail\PaymentSuccessful;
 use Stripe\Stripe;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use PayPalCheckoutSdk\Core\PayPalHttpClient;
 use PayPalCheckoutSdk\Core\SandboxEnvironment;
 use PayPalCheckoutSdk\Core\ProductionEnvironment;
@@ -231,17 +233,34 @@ class PaymentController extends Controller
                     'currency' => $currency
                 ]);
                 
+                // Get user and formation for email
+                $user = User::find($request->userId);
+                $formation = Formation::find($request->formationId);
+                
                 // Save payment record
                 $payment = new Payment();
                 $payment->user_id = $request->userId;
                 $payment->formation_id = $request->formationId;
                 $payment->amount = $amount;
+                $payment->Pays = $request->Pays;
+                $payment->ville = $request->ville;
+                $payment->adresse = $request->adresse;
+                $payment->code_postal = $request->code_postal;
                 $payment->currency = strtolower($currency);
                 $payment->paypal_order_id = $request->orderId;
                 $payment->paypal_capture_id = $captureId;
                 $payment->payment_method = 'paypal';
                 $payment->status = 'completed';
                 $payment->save();
+                
+                // Send payment confirmation email
+                try {
+                    Mail::to($user->email)->send(new PaymentSuccessful($user, $formation, $payment));
+                    Log::info('Payment confirmation email sent to: ' . $user->email);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send payment confirmation email: ' . $e->getMessage());
+                    // Continue execution even if email fails
+                }
                 
                 Log::info('PayPal payment saved successfully');
                 
@@ -331,16 +350,33 @@ class PaymentController extends Controller
                 ]);
             }
 
+            // Get user and formation for email
+            $user = User::find($request->userId);
+            $formation = Formation::find($request->formationId);
+
             // Save payment record
             $payment = new Payment();
             $payment->user_id = $request->userId;
             $payment->formation_id = $request->formationId;
-            $payment->amount = $paymentIntent->amount / 100; // Using 'amount' as in the migration
+            $payment->amount = $paymentIntent->amount / 100;
+            $payment->Pays = $request->Pays;
+            $payment->ville = $request->ville;
+            $payment->adresse = $request->adresse;
+            $payment->code_postal = $request->code_postal;
             $payment->currency = $paymentIntent->currency;
             $payment->stripe_payment_intent_id = $paymentIntent->id;
             $payment->payment_method = 'stripe';
             $payment->status = 'completed';
             $payment->save();
+            
+            // Send payment confirmation email
+            try {
+                Mail::to($user->email)->send(new PaymentSuccessful($user, $formation, $payment));
+                Log::info('Payment confirmation email sent to: ' . $user->email);
+            } catch (\Exception $e) {
+                Log::error('Failed to send payment confirmation email: ' . $e->getMessage());
+                // Continue execution even if email fails
+            }
             
             return response()->json([
                 'success' => true,

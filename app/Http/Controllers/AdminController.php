@@ -3,8 +3,12 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Payment;
 use App\Notifications\FormateurValidé;
 use App\Notifications\FormateurRejete;
+use App\Models\Formation;
+use Illuminate\Support\Facades\Log;
 class AdminController extends Controller
 {
     public function getFormateursEnAttente()
@@ -111,6 +115,138 @@ public function updateFormateur(Request $request, $id)
 
     return redirect()->route('formateurs.index')->with('success', 'Formateur modifié avec succès.');
 }
-
+public function allUsers(Request $request)
+{
+       // Vérification du rôle directement dans le contrôleur
+       if (Auth::user()->role !== 'admin') {
+        return redirect()->route('dashboard')
+            ->with('error', 'Vous n\'avez pas les permissions nécessaires pour accéder à cette page.');
+    }
+    // Récupérer tous les utilisateurs avec pagination
+    $query = User::query();
     
+    // Filtrage par rôle si spécifié dans la requête
+    if ($request->has('role') && $request->role) {
+        $query->where('role', $request->role);
+    }
+    
+    // Recherche par nom/prénom/email si spécifié
+    if ($request->has('search') && $request->search) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('first_name', 'like', "%{$search}%")
+              ->orWhere('last_name', 'like', "%{$search}%")
+              ->orWhere('email', 'like', "%{$search}%");
+        });
+    }
+    
+    // Tri des résultats
+    $sortField = $request->input('sort_field', 'created_at');
+    $sortDirection = $request->input('sort_direction', 'desc');
+    $query->orderBy($sortField, $sortDirection);
+    
+    // Récupérer les utilisateurs avec pagination
+    $users = $query->paginate(10);
+    
+    // Nombres d'utilisateurs par rôle (pour les statistiques)
+    $userCounts = [
+        'total' => User::count(),
+        'user' => User::where('role', 'user')->count(),
+        'formateur' => User::where('role', 'formateur')->count(),
+        'startup' => User::where('role', 'startup')->count(),
+    ];
+    
+    return Inertia::render('Admin/AllUsers', [
+        'users' => $users,
+        'filters' => [
+            'role' => $request->role,
+            'search' => $request->search,
+            'sort_field' => $sortField,
+            'sort_direction' => $sortDirection,
+        ],
+        'userCounts' => $userCounts
+    ]);
+}
+public function showUser(User $user)
+{
+    return Inertia::render('Admin/UserShow', [
+        'user' => $user
+    ]);
+}
+
+// Afficher le formulaire d'édition
+public function edit(User $user)
+{
+    return Inertia::render('Admin/UserEdit', [
+        'user' => $user
+    ]);
+}
+
+// Supprimer un utilisateur
+public function destroy(User $user)
+{
+    $user->delete();
+    
+    return redirect()->route('admin.users')
+        ->with('success', 'Utilisateur supprimé avec succès');
+}
+    /**
+         * Get all payments with user and formation details
+     */
+    /**
+     * Display a listing of the payments.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
+    {
+        $payments = Payment::with(['user', 'formation'])->get();
+        return response()->json($payments);
+    }
+
+    /**
+     * Get statistics about payments.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function statistics()
+    {
+        $stats = [
+            'total' => Payment::count(),
+            'completed' => Payment::where('status', 'completed')->count(),
+            'pending' => Payment::where('status', 'pending')->count(),
+            'failed' => Payment::where('status', 'failed')->count(),
+            'total_revenue' => Payment::where('status', 'completed')->sum('amount'),
+        ];
+        
+        return response()->json($stats);
+    }
+
+    /**
+     * Display the specified payment.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function show($id)
+    {
+        $payment = Payment::with(['user', 'formation'])->findOrFail($id);
+        return response()->json($payment);
+    }
+    public function countUser()
+    {
+        $count = User::count();
+        return response()->json(['count' => $count]);
+    }
+    public function countFormations()
+{
+    try {
+        $count = Formation::count();
+        return response()->json(['count' => $count]);
+    } catch (\Exception $e) {
+        // Log the error
+        Log::error('Formation count error: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to count formations'], 500);
+    }
+}
 }

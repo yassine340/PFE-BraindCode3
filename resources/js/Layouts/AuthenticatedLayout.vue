@@ -300,7 +300,9 @@ const logout = async () => {
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 font-semibold mr-3">
-                {{ user?.first_name?.charAt(0).toUpperCase() || 'U' }}
+                <div v-if="user.profile_image" class="flex-shrink-0 h-10 w-10">
+                  <img class="h-10 w-10 rounded-full" :src="user.profile_image" alt="" />
+                </div>
               </div>
               <div class="flex flex-col">
                 <span class="text-sm font-medium">{{ user?.first_name || 'Utilisateur' }}</span>

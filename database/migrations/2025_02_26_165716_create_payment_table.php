@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('formation_id')->constrained()->onDelete('cascade');
+            $table->string('Pays');
+            $table->string('ville');
+            $table->string('adresse');
+            $table->string('code_postal');
             $table->decimal('amount', 10, 2); // Changed from 'montant' to match controller
             $table->string('currency'); // Added to match controller
             $table->string('stripe_payment_intent_id')->nullable();

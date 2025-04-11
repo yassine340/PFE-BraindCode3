@@ -369,7 +369,7 @@
 <div v-if="showPaymentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
   <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
     <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-bold">Paiement pour {{ props.formation.titre }}</h2>
+      <h2 class="text-xl font-bold">Paiement pour la formation de {{ props.formation.titre }}</h2>
       <button @click="showPaymentModal = false" class="text-gray-500 hover:text-gray-700">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -427,17 +427,68 @@
       
       <!-- Stripe Payment Form -->
       <div v-if="paymentMethod === 'stripe'" class="space-y-4">
+        <!-- Adresse de facturation -->
         <div class="space-y-2">
-          <label for="card-holder-name" class="block text-sm font-medium text-gray-700">Nom sur la carte</label>
-          <input 
-            id="card-holder-name" 
-            v-model="paymentInfo.name" 
-            type="text" 
-            class="w-full p-2 border border-gray-300 rounded" 
-            placeholder="Nom complet"
-          />
-        </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="address" class="block text-sm font-medium text-gray-700">Adresse</label>
+              <input 
+                id="address" 
+                v-model="paymentInfo.address" 
+                type="text" 
+                class="w-full p-2 border border-gray-300 rounded" 
+                placeholder="Adresse"
+              />
+            </div>
+            
+            <div>
+              <label for="postal_code" class="block text-sm font-medium text-gray-700">Code postal</label>
+              <input 
+                id="postal_code" 
+                v-model="paymentInfo.postal_code" 
+                type="text" 
+                class="w-full p-2 border border-gray-300 rounded" 
+                placeholder="Code postal"
+              />
+            </div>
+            <!-- Pays -->
+            <div>
+              <label for="country" class="block text-sm font-medium text-gray-700">Pays</label>
+              <select
+                id="country"
+                v-model="paymentInfo.country"
+                class="w-full p-2 border border-gray-300 rounded"
+                :disabled="loadingCountries"
+              >
+                <option value="" disabled>Sélectionnez un pays</option>
+                <option v-for="country in countries" :key="country.code" :value="country.code">
+                  {{ country.name }}
+                </option>
+              </select>
+              <p v-if="loadingCountries" class="text-sm text-gray-500">Chargement des pays...</p>
+            </div>
 
+            <!-- Ville -->
+            <div>
+              <label for="city" class="block text-sm font-medium text-gray-700">Ville</label>
+              <select
+                id="city"
+                v-model="paymentInfo.city"
+                class="w-full p-2 border border-gray-300 rounded"
+                :disabled="loadingCities || !paymentInfo.country"
+              >
+                <option value="" disabled>Sélectionnez une ville</option>
+                <option v-for="city in cities" :key="city.id" :value="city.name">
+                  {{ city.name }}
+                </option>
+              </select>
+              <p v-if="loadingCities" class="text-sm text-gray-500">Chargement des villes...</p>
+              <p v-else-if="!paymentInfo.country" class="text-sm text-gray-500">Veuillez d'abord sélectionner un pays</p>
+            </div>
+          </div>
+        </div>
+        <!-- Stripe Card Element -->
+            
         <div class="space-y-2">
           <label for="card-element" class="block text-sm font-medium text-gray-700">Informations de carte</label>
           <div id="card-element" class="p-2 border border-gray-300 rounded"></div>
@@ -575,12 +626,78 @@ const paymentMethod = ref('stripe'); // 'stripe' or 'paypal'
 const paypalOrderId = ref('');
 const paypalApprovalUrl = ref('');
 
-// Add payment info reactive object for name and postal code
+// Add payment info reactive object
 const paymentInfo = reactive({
   name: '',
+  address: '',
+  postal_code: '',
+  city: '',
+  country: '', // Code du pays sélectionné
 });
 
-// Card element status
+const countries = ref([]);
+const cities = ref([]);
+const loadingCountries = ref(false);
+const loadingCities = ref(false);
+
+// Fonction pour récupérer les pays
+const fetchCountries = async () => {
+  loadingCountries.value = true;
+  try {
+    const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+    const data = await response.json();
+    
+    countries.value = data
+      .map(country => ({
+        code: country.cca2,
+        name: country.name.common
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des pays:', error);
+  } finally {
+    loadingCountries.value = false;
+  }
+};
+
+// Fonction pour récupérer les villes en fonction du pays
+const fetchCities = async (countryCode) => {
+  if (!countryCode) return;
+  
+  loadingCities.value = true;
+  cities.value = [];
+  paymentInfo.city = ''; // Réinitialiser la ville sélectionnée
+  
+  try {
+    const username = 'fakhri'; // Créez un compte sur geonames.org et utilisez votre nom d'utilisateur
+    const response = await fetch(`http://api.geonames.org/searchJSON?country=${countryCode}&featureClass=P&maxRows=1000&username=${username}`);
+    const data = await response.json();
+    
+    cities.value = data.geonames
+      .map(city => ({
+        name: city.name,
+        id: city.geonameId
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch (error) {
+    console.error('Erreur lors de la récupération des villes:', error);
+  } finally {
+    loadingCities.value = false;
+  }
+};
+
+// Surveiller les changements de pays pour charger les villes correspondantes
+watch(() => paymentInfo.country, (newCountry) => {
+  if (newCountry) {
+    fetchCities(newCountry);
+  }
+});
+
+onMounted(() => {
+  fetchCountries();
+});
+
+// Card element status stripe
 const cardElementComplete = ref(false);
 const cardElement = ref(null);
 const stripe = ref(null);
@@ -620,6 +737,15 @@ const setupStripe = async () => {
   
   // Reset form fields
   paymentInfo.name = '';
+  paymentInfo.address = '';
+  paymentInfo.postal_code = '';
+  paymentInfo.city = '';
+  paymentInfo.country = '';
+  cardElementComplete.value = false;
+  clientSecret.value = '';
+  cardElement.value = null;
+  stripe.value = null;
+  elements.value = null;
   
   if (!userId.value || !props.formation?.id) {
     paymentError.value = "Erreur: Utilisateur ou formation non disponible";
@@ -632,7 +758,16 @@ const setupStripe = async () => {
       userId: userId.value,
       formationId: props.formation.id,
       amount: props.formation.prix * 100,
-    });
+      billing_details: {
+      name: paymentInfo.name,
+      address: {
+        line1: paymentInfo.address,
+        city: paymentInfo.city,
+        postal_code: paymentInfo.postal_code,
+        country: paymentInfo.country
+      }
+    }
+  });
     
     console.log("User ID:", userId.value);
     console.log("Formation ID:", props.formation.id);
@@ -699,7 +834,7 @@ const setupPayPal = async () => {
     const response = await axios.post('/paypal/create-order', {
       userId: userId.value,
       formationId: props.formation.id,
-      amount: props.formation.prix * 100, // Keep consistent with stripe (cents)
+      amount: props.formation.prix * 100,
     });
     
     paypalOrderId.value = response.data.orderId;
@@ -718,8 +853,8 @@ const processStripePayment = async () => {
     return;
   }
   
-  if (!paymentInfo.name) {
-    paymentError.value = "Veuillez entrer le nom sur la carte";
+  if (!paymentInfo.address || !paymentInfo.postal_code || !paymentInfo.city || !paymentInfo.country) {
+    paymentError.value = "Veuillez entrer l'adresse de facturation complète";
     return;
   }
   
@@ -755,7 +890,11 @@ const processStripePayment = async () => {
         const confirmResponse = await axios.post('/stripe/confirm-payment', {
           paymentIntentId: result.paymentIntent.id,
           userId: userId.value,
-          formationId: props.formation.id
+          formationId: props.formation.id,
+          Pays: paymentInfo.country,
+          ville: paymentInfo.city,
+          adresse: paymentInfo.address,
+          code_postal: paymentInfo.postal_code        
         });
         
         console.log("Server confirmation response:", confirmResponse.data);
