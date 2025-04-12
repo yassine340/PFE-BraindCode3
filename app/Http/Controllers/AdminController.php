@@ -9,6 +9,7 @@ use App\Notifications\FormateurValidé;
 use App\Notifications\FormateurRejete;
 use App\Models\Formation;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 class AdminController extends Controller
 {
     public function getFormateursEnAttente()
@@ -241,12 +242,102 @@ public function destroy(User $user)
     public function countFormations()
 {
     try {
-        $count = Formation::count();
+        $count = Formation::where('est_valide', 'Validée')->count();
         return response()->json(['count' => $count]);
     } catch (\Exception $e) {
         // Log the error
         Log::error('Formation count error: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to count formations'], 500);
+    }
+}
+
+public function getFormationsEnAttente()
+{
+    $formations = Formation::with('user:id,first_name,last_name,email')
+                          ->with('user:id,first_name,last_name,email')
+                          ->with('category:id,name')
+                          ->select('id', 'titre', 'user_id', 'est_valide', 'created_at', 'category_id', 'image_formation')
+                          ->get();
+                          
+    return Inertia::render('Formations/FormationEnAttente', [
+        'formations' => $formations
+    ]);
+}
+public function validerFormation(Request $request, $id) {
+    // Récupérer la formation par son ID
+    $formation = Formation::findOrFail($id);
+    
+    // Mettre à jour son statut à 'Validée'
+    $formation->est_valide = "Validée";
+    $formation->save();
+    
+    // Envoi d'un email de confirmation
+    $this->envoyerEmailNotification($formation, 'Validee');
+    
+    return response()->json([
+        'message' => 'Formation validée avec succès.'
+    ]);
+}
+
+public function rejeterFormation(Request $request, $id) {
+    // Récupérer la formation par son ID
+    $formation = Formation::findOrFail($id);
+    
+    // Mettre à jour son statut à 'Rejetée'
+    $formation->est_valide = "Rejetée";
+    $formation->save();
+    
+    // Envoi d'un email de rejet
+    $this->envoyerEmailNotification($formation, 'Rejetee');
+    
+    return response()->json([
+        'message' => 'Formation rejetée avec succès.'
+    ]);
+}
+
+/**
+ * Envoie un email de notification concernant le statut de la formation
+ * 
+ * @param Formation $formation
+ * @param string $statut
+ * @return void
+ */
+private function envoyerEmailNotification(Formation $formation, $statut) {
+    // Récupérer l'utilisateur associé à la formation
+    $user = $formation->user;
+    
+    if ($user && $user->email) {
+        Mail::send('emails.formation_status', [
+            'formation' => $formation,
+            'statut' => $statut
+        ], function ($message) use ($user, $statut, $formation) {
+            $message->to($user->email, $user->name)
+                ->subject('Votre formation "' . $formation->titre . '" a été ' . strtolower($statut));
+        });
+    }
+}
+public function getFormationsEnAttente2()
+{
+    $formations = Formation::where('est_valide', 'EnAttente')
+                          ->with('user:id,first_name,last_name,email')
+                          ->with('category:id,name')
+                          ->select('id', 'titre', 'user_id', 'est_valide', 'created_at', 'category_id')
+                          ->get();
+                          
+    // Return JSON directly instead of Inertia response
+    return response()->json($formations);
+}
+public function countFormateurEnAttente()
+{
+    try {
+        $count = User::where('role', 'formateur')
+                     ->where('status', 'en_attente')
+                     ->count();
+        return response()->json(['count' => $count]);
+    } catch (\Exception $e) {
+        // Log the error
+        Log::error('Formateur count error: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to count formateurs'], 500);
     }
 }
 }

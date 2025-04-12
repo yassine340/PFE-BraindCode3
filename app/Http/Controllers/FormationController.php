@@ -12,9 +12,28 @@ class FormationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $formations = Formation::select('id', 'titre', 'image_formation')->get();
+        $query = Formation::select('id', 'titre', 'image_formation', 'est_valide', 'est_publiee', 'user_id')
+                           ->with('user:id,first_name,last_name,email') // Chargement de l'utilisateur (formateur)
+                           ->where('est_valide', 'Validée'); // Par défaut, ne montrer que les formations validées
+        
+        // Si l'utilisateur est un utilisateur standard ou une startup, ne montrer que les formations validées ET publiées
+        if (auth()->user()->role === 'user' || auth()->user()->role === 'startup') {
+            $query->where('est_valide', true)
+                  ->where('est_publiee', true);
+        }
+        // Si l'utilisateur est un formateur, ne montrer que ses propres formations
+        else if (auth()->user()->role === 'formateur') {
+            $query->where('user_id', auth()->id());
+        }
+        // Sinon, si un paramètre de requête est fourni pour filtrer les formations
+        else if ($request->has('show_all') && $request->show_all === 'false') {
+            $query->where('est_valide', true);
+        }
+        
+        $formations = $query->get();
+        
         return Inertia::render('Formations/Index', [
             'formations' => $formations
         ]);
@@ -28,6 +47,9 @@ class FormationController extends Controller
         return Inertia::render('Formations/Create');
     }
 
+    /**
+     * Store a newly created resource in storage.
+     */
     public function store(Request $request)
     {
         try {
@@ -35,7 +57,7 @@ class FormationController extends Controller
                 'titre' => 'required|string|max:255',
                 'prix' => 'required|numeric',
                 'estcertifiante' => 'required|boolean',
-                'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+                'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
                 'category_id' => 'required|exists:categories,id',
                 'modules.*.titre' => 'required|string|max:255',
                 'modules.*.description' => 'nullable|string',
@@ -43,7 +65,7 @@ class FormationController extends Controller
                 'modules.*.duree_estimee' => 'required|integer',
                 'modules.*.lecons.*.titre' => 'required|string|max:255',
                 'modules.*.lecons.*.contenu' => 'required|string',
-                'modules.*.lecons.*.videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv,flv,mkv',
+                'modules.*.lecons.*.videos.*.file' => 'nullable|mimes:mp4,mov,avi,wmv',
                 'modules.*.lecons.*.videos.*.titre' => 'nullable|string|max:255',
                 'modules.*.lecons.*.documents.*.file' => 'nullable|mimes:pdf,doc,docx,txt',
                 'modules.*.lecons.*.documents.*.titre' => 'nullable|string|max:255',
@@ -59,7 +81,7 @@ class FormationController extends Controller
             $imagePath = $request->hasFile('image_formation') 
                 ? $request->file('image_formation')->storeAs('formations', time() . '_' . $request->file('image_formation')->getClientOriginalName(), 'public') 
                 : null;
-            
+
             // Create formation
             $formation = Formation::create([
                 'titre' => $request->titre,
@@ -67,6 +89,9 @@ class FormationController extends Controller
                 'estcertifiante' => $request->estcertifiante,
                 'image_formation' => $imagePath,
                 'category_id' => $request->category_id,
+                'user_id' => auth()->id(), // ID de l'utilisateur connecté (formateur)
+                //'est_valide' => auth()->user()->role === 'admin' ? true : false, // Validé automatiquement si admin
+                'est_publiee' => false // Non publiée par défaut
             ]);
 
             // Create modules, lessons, quizzes, questions, and answers
@@ -153,22 +178,41 @@ class FormationController extends Controller
         }
     }
 
+    /**
+     * Display the specified resource.
+     */
     public function show($id)
     {
         $formation = Formation::with([
             'modules.lecons.videos',
             'modules.lecons.documents',
-            'modules.lecons.quiz.questions.reponses', 
-            'category'
+            'modules.lecons.quiz.questions.reponses',
+            'category',
+            'user:id,first_name,last_name,email' // Inclure les informations du formateur
         ])->findOrFail($id);
 
-        $currentModuleIndex = 0; 
-        $currentLeconIndex = 0; 
+        // Préparer les données pour afficher un seul module, une seule leçon, etc.
+        $currentModuleIndex = 0; // Par défaut, afficher le premier module
+        $currentLeconIndex = 0; // Par défaut, afficher la première leçon du module
 
         $modules = $formation->modules;
 
+        // Récupérer le module et la leçon actuels
         $currentModule = $modules[$currentModuleIndex] ?? null;
         $currentLecon = $currentModule->lecons[$currentLeconIndex] ?? null;
+
+        // Vérifier si l'utilisateur peut voir cette formation
+        $canView = true;
+        if (auth()->user()->role === 'user' || auth()->user()->role === 'startup') {
+            $canView = $formation->est_valide && $formation->est_publiee;
+        } else if (auth()->user()->role === 'formateur') {
+            $canView = $formation->user_id === auth()->id();
+        }
+
+        if (!$canView) {
+            return redirect()->route('formations.index')
+                           ->with('error', 'Vous n\'êtes pas autorisé à accéder à cette formation.');
+        }
 
         return Inertia::render('Formations/Show', [
             'formation' => $formation,
@@ -178,12 +222,78 @@ class FormationController extends Controller
             'currentLeconIndex' => $currentLeconIndex,
             'totalModules' => count($modules),
             'totalLecons' => $currentModule ? count($currentModule->lecons) : 0,
+            'isOwner' => $formation->user_id === auth()->id(), // Indique si l'utilisateur est le propriétaire
         ]);
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        $formation = Formation::with(['modules.lecons'])->findOrFail($id);
+
+        // Vérifier si l'utilisateur peut modifier cette formation
+        if (auth()->user()->role !== 'admin' && $formation->user_id !== auth()->id()) {
+            return redirect()->route('formations.index')
+                           ->with('error', 'Vous n\'êtes pas autorisé à modifier cette formation.');
+        }
+
+        return Inertia::render('Formations/Edit', [
+            'formation' => $formation
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $formation = Formation::findOrFail($id);
+
+        // Vérifier si l'utilisateur peut modifier cette formation
+        if (auth()->user()->role !== 'admin' && $formation->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Vous n\'êtes pas autorisé à modifier cette formation.'], 403);
+        }
+
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'prix' => 'required|numeric',
+            'estcertifiante' => 'required|boolean',
+            'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
+            'category_id' => 'required|exists:categories,id',
+        ]);
+
+        // Gérer l'upload de l'image si elle a été modifiée
+        if ($request->hasFile('image_formation')) {
+            // Supprimer l'ancienne image si elle existe
+            if ($formation->image_formation) {
+                Storage::delete('public/' . $formation->image_formation);
+            }
+            
+            $path = $request->file('image_formation')->store('formations', 'public');
+            $validated['image_formation'] = $path;
+        }
+
+        // Mise à jour des données
+        $formation->update($validated);
+
+        return redirect()->route('formations.show', $formation->id)
+            ->with('success', 'Formation mise à jour avec succès.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
     public function destroy($id)
     {
         $formation = Formation::findOrFail($id);
+        
+        // Vérifier si l'utilisateur peut supprimer cette formation
+        if (auth()->user()->role !== 'admin' && $formation->user_id !== auth()->id()) {
+            return redirect()->route('formations.index')
+                           ->with('error', 'Vous n\'êtes pas autorisé à supprimer cette formation.');
+        }
         
         // Supprimer les fichiers associés (image, vidéos, documents)
         if ($formation->image_formation) {
@@ -204,40 +314,80 @@ class FormationController extends Controller
         // Supprimer la formation avec ses relations
         $formation->delete();
 
-        return redirect()->route('formations.index')->with('success', 'Formation supprimée avec succès.');
+        return redirect()->route('formations.index')
+                        ->with('success', 'Formation supprimée avec succès.');
     }
 
-    public function edit($id)
+    /**
+     * Valider ou invalider une formation
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function validateFormation(Request $request, $id)
     {
-        $formation = Formation::with(['modules.lecons'])->findOrFail($id);
+        // Seuls les administrateurs peuvent valider/invalider
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['error' => 'Vous n\'êtes pas autorisé à effectuer cette action.'], 403);
+        }
+        
+        $formation = Formation::findOrFail($id);
+        
+        // Valider les données de la requête
+        $validated = $request->validate([
+            'est_valide' => 'required|boolean',
+        ]);
 
-        return Inertia::render('Formations/Edit', [
+        // Mettre à jour le statut de validation
+        $formation->update([
+            'est_valide' => $validated['est_valide'],
+        ]);
+
+        $status = $validated['est_valide'] ? 'validée' : 'invalidée';
+        
+        return response()->json([
+            'message' => "La formation a été {$status} avec succès.",
             'formation' => $formation
         ]);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Publier ou dépublier une formation
+     *
+     * @param  Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function togglePublication(Request $request, $id)
     {
         $formation = Formation::findOrFail($id);
-
+        
+        // Vérifier si l'utilisateur peut publier/dépublier cette formation
+        if (auth()->user()->role !== 'admin' && $formation->user_id !== auth()->id()) {
+            return response()->json(['error' => 'Vous n\'êtes pas autorisé à publier/dépublier cette formation.'], 403);
+        }
+        
+        // Les formateurs ne peuvent publier que les formations validées
+        if (auth()->user()->role === 'formateur' && !$formation->est_valide && $request->est_publiee) {
+            return response()->json(['error' => 'Vous ne pouvez pas publier une formation non validée.'], 400);
+        }
+        
+        // Valider les données de la requête
         $validated = $request->validate([
-            'titre' => 'required|string|max:255',
-            'prix' => 'required|numeric',
-            'estcertifiante' => 'required|boolean',
-            'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
-            'category_id' => 'required|exists:categories,id',
+            'est_publiee' => 'required|boolean',
         ]);
 
-        // Gérer l'upload de l'image si elle a été modifiée
-        if ($request->hasFile('image_formation')) {
-            $path = $request->file('image_formation')->store('formations', 'public');
-            $validated['image_formation'] = $path;
-        }
+        // Mettre à jour le statut de publication
+        $formation->update([
+            'est_publiee' => $validated['est_publiee'],
+        ]);
 
-        // Mise à jour des données
-        $formation->update($validated);
-
-        return redirect()->route('formations.show', $formation->id)
-            ->with('success', 'Formation mise à jour avec succès.');
+        $status = $validated['est_publiee'] ? 'publiée' : 'dépubliée';
+        
+        return response()->json([
+            'message' => "La formation a été {$status} avec succès.",
+            'formation' => $formation
+        ]);
     }
 }

@@ -75,6 +75,9 @@ Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFaceboo
 
 //************************************************************************************************* */
 
+//
+Route::get('/api/formateur-en-attente', [AdminController::class, 'countFormateurEnAttente']);
+
 // Route pour afficher la liste des formateurs en attente
 Route::get('/formateurs-en-attente', [AdminController::class, 'getFormateursEnAttente'])
     ->name('formateur.en.attente');
@@ -133,6 +136,17 @@ Route::get('/formations', [FormationController::class, 'index'])->name('formatio
 
 //************************************************************************************************* */
 
+// API route that returns JSON data
+Route::get('/api/formations-en-attente', [AdminController::class, 'getFormationsEnAttente2']);
+// Route pour afficher la liste des formations en attente
+Route::get('/formations-en-attente', [AdminController::class, 'getFormationsEnAttente'])
+    ->name('formation.en.attente');
+// Valider une formation
+Route::post('/formations/{id}/valider', [AdminController::class, 'validerFormation'])
+    ->name('formations.valider');
+// Rejeter une formation
+Route::post('/formations/{id}/rejeter', [AdminController::class, 'rejeterFormation'])
+    ->name('formations.rejeter');
 // Afficher le formulaire de création d'une formation
 Route::get('/formations/create', [FormationController::class, 'create'])->name('formations.create');
 // Enregistrer la formation dans la base de données

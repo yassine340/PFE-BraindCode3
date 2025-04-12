@@ -7,6 +7,9 @@ import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
 
 const user = usePage().props.auth.user;
+const loading = ref(true);
+const error = ref(null);
+
 const stats = ref({
   totalUsers: 0,
   totalFormations: 0,
@@ -29,6 +32,8 @@ const formatCurrency = (amount, currency = 'EUR') => {
 // Charger les statistiques et données
 onMounted(async () => {
   try {
+    loading.value = true;
+    
     // Fetch payment data for revenue calculation
     const paymentsResponse = await axios.get('/payments');
     payments.value = paymentsResponse.data;
@@ -44,20 +49,41 @@ onMounted(async () => {
     // fetch formations count data
     const formationsResponse = await axios.get('/formations/count');
     const totalFormations = formationsResponse.data.count;
-    // Update stats with real revenue from payments
+    
+    //
+    const  formateurEnAttenteResponse= await axios.get('/api/formateur-en-attente');
+    const totalFormateurEnAttente = formateurEnAttenteResponse.data.count;
+
+    // Fetch formations en attente using your existing API endpoint
+    const pendingFormationsResponse = await axios.get('/api/formations-en-attente');
+    let formationsData = pendingFormationsResponse.data;
+    
+    // If the data is wrapped in a 'formations' property (common with Inertia responses)
+    if (formationsData && typeof formationsData === 'object' && formationsData.formations) {
+      formationsData = formationsData.formations;
+    }
+    
+    // Ensure we have an array before using map
+    if (Array.isArray(formationsData)) {
+      pendingFormations.value = formationsData.map(formation => ({
+        id: formation.id,
+        titre: formation.titre,
+        auteur: formation.user ? `${formation.user.first_name} ${formation.user.last_name}` : 'Unknown',
+        date: formation.created_at,
+        category: formation.category ? formation.category.name : 'Non catégorisée',
+      }));
+    } else {
+      console.error('Expected an array for formations but got:', formationsData);
+      pendingFormations.value = [];
+    }
+   
+    // Update stats with real data
     stats.value = {
       totalUsers: totalUsers,
       totalFormations: totalFormations,
-      formationsEnAttente: 0,
+      formationsEnAttente: totalFormateurEnAttente,
       revenus: totalRevenue
     };
-    
-    // Formations en attente de validation
-    pendingFormations.value = [
-      { id: 1, titre: 'Introduction au Machine Learning', auteur: 'Marie Laurent', date: '2025-03-28', category: 'IA' },
-      { id: 2, titre: 'React.js Avancé', auteur: 'Thomas Dubois', date: '2025-03-27', category: 'Développement Web' },
-      { id: 3, titre: 'UX Design pour Débutants', auteur: 'Sophie Martin', date: '2025-03-26', category: 'Design' },
-    ];
     
     // Activités récentes
     recentActivities.value = [
@@ -68,23 +94,62 @@ onMounted(async () => {
     ];
   } catch (error) {
     console.error('Erreur lors du chargement des données', error);
+    error.value = "Une erreur s'est produite lors du chargement des données.";
+  } finally {
+    loading.value = false;
   }
 });
+
+// Alternative approach: use your existing getFormationsEnAttente method
+const loadPendingFormations = async () => {
+  try {
+    const response = await axios.get('/formations-en-attente');
+    const data = response.data;
+    
+    // If the data contains the props (Inertia structure)
+    if (data && data.props && data.props.formations) {
+      pendingFormations.value = data.props.formations.map(formation => ({
+        id: formation.id,
+        titre: formation.titre,
+        auteur: formation.user ? `${formation.user.first_name} ${formation.user.last_name}` : 'Unknown',
+        date: formation.created_at,
+        category: formation.category ? formation.category.name : 'Non catégorisée',
+        image: formation.image_formation
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading pending formations', error);
+  }
+};
 
 // Fonction pour valider une formation
 const validateFormation = async (id, isValid) => {
   try {
-    // À implémenter avec votre API
-    await axios.put(`/formations/${id}/validate`, { est_valide: isValid });
+    if (isValid) {
+      // Utiliser votre endpoint de validation existant
+      await axios.post(`/formations/${id}/valider`);
+    } else {
+      // Utiliser votre endpoint de rejet existant
+      await axios.post(`/formations/${id}/rejeter`);
+    }
     
     // Mettre à jour la liste des formations en attente
     pendingFormations.value = pendingFormations.value.filter(f => f.id !== id);
     
     // Mettre à jour les statistiques
-    stats.value.formationsEnAttente--;
+    stats.value.formationsEnAttente = pendingFormations.value.length;
     
     // Ajouter une notification
     alert(`Formation ${isValid ? 'validée' : 'rejetée'} avec succès!`);
+    
+    // Ajouter cette action aux activités récentes
+    recentActivities.value.unshift({
+      type: 'validation',
+      user: user.first_name + ' ' + user.last_name,
+      date: new Date().toISOString().split('T')[0],
+      details: `a ${isValid ? 'validé' : 'rejeté'} la formation "${pendingFormations.value.find(f => f.id === id)?.titre}"`
+    });
+    
   } catch (error) {
     console.error('Erreur lors de la validation', error);
     alert('Une erreur est survenue lors de la validation');
@@ -204,7 +269,7 @@ const validateFormation = async (id, isValid) => {
                         <div>
                             <span class="text-3xl font-bold text-gray-900">{{ stats.formationsEnAttente }}</span>
                             <Link href="/formateurs-en-attente" class="mt-2 block text-amber-600 text-sm font-medium hover:underline">
-                                Voir les formations en attente →
+                                Voir les Formateurs en attente →
                             </Link>
                         </div>
                     </div>
@@ -340,7 +405,7 @@ const validateFormation = async (id, isValid) => {
                                 </table>
                             </div>
                             <div class="mt-4 text-right">
-                                <Link href="/formations?filter=pending" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                                <Link href="/formations-en-attente" class="text-sm font-medium text-indigo-600 hover:text-indigo-800">
                                     Voir toutes les formations en attente →
                                 </Link>
                             </div>
