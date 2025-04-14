@@ -95,97 +95,116 @@ class PaymentController extends Controller
     }
 
     /**
-     * Create a PayPal order
-     */
-    public function createPayPalOrder(Request $request)
-    {
-        try {
-            Log::info('Creating PayPal order', $request->all());
-            
-            $user = User::find($request->userId);
-            if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
-            }
-            
-            $formation = Formation::find($request->formationId);
-            if (!$formation) {
-                return response()->json(['error' => 'Formation not found'], 404);
-            }
-            
-            // Check if amount is already in correct format - if amount is like 19.99, don't divide
-            // If amount is in cents (like 1999), then divide by 100
-            $amount = $request->amount;
-            if ($amount > 100) { // This assumes no product costs more than €100
-                $amount = $amount / 100;
-            }
-            
-            Log::info('PayPal amount after conversion: ' . $amount);
-            
-            $request = new OrdersCreateRequest();
-            $request->prefer('return=representation');
-            
-            // Define front-end URLs for success and cancel - make sure these are defined in routes
-            $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-            $successUrl = $frontendUrl . '/paypal/success';
-            $cancelUrl = $frontendUrl . '/paypal/cancel';
-            
-            // Construct the request body
-            $request->body = [
-                'intent' => 'CAPTURE',
-                'purchase_units' => [[
-                    'reference_id' => 'formation_' . $formation->id,
-                    'description' => $formation->titre,
-                    'custom_id' => $user->id . '_' . $formation->id,
-                    'amount' => [
-                        'currency_code' => 'EUR',
-                        'value' => number_format($amount, 2, '.', '')
-                    ]
-                ]],
-                'application_context' => [
-                    'brand_name' => config('app.name', 'Your Application'),
-                    'landing_page' => 'BILLING',
-                    'user_action' => 'PAY_NOW',
-                    'return_url' => $successUrl,
-                    'cancel_url' => $cancelUrl
-                ]
-            ];
-            
-            Log::info('PayPal request data:', [
-                'amount' => $amount,
-                'currency' => 'EUR',
-                'success_url' => $successUrl,
-                'cancel_url' => $cancelUrl
-            ]);
-            
-            $response = $this->paypalClient->execute($request);
-            
-            Log::info('PayPal order created', [
-                'id' => $response->result->id,
-                'status' => $response->result->status
-            ]);
-            
-            // Return the PayPal order ID and approval link
-            foreach ($response->result->links as $link) {
-                if ($link->rel === 'approve') {
-                    return response()->json([
-                        'orderId' => $response->result->id,
-                        'approvalUrl' => $link->href
-                    ]);
-                }
-            }
-            
-            return response()->json(['error' => 'Approval URL not found'], 500);
-            
-        } catch (\Exception $e) {
-            Log::error('Error creating PayPal order: ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response()->json(['error' => $e->getMessage()], 500);
+ * Create a PayPal order
+ */
+public function createPayPalOrder(Request $request)
+{
+    try {
+        Log::info('Creating PayPal order', $request->all());
+        
+        $user = User::find($request->userId);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
         }
+        
+        $formation = Formation::find($request->formationId);
+        if (!$formation) {
+            return response()->json(['error' => 'Formation not found'], 404);
+        }
+        
+        // Ensure consistent amount formatting - Always use decimal format for PayPal
+        $amount = $request->amount;
+        if ($amount > 100) { // This assumes no product costs more than €100
+            $amount = $amount / 100;
+        }
+        
+        // Format amount properly with 2 decimal places
+        $formattedAmount = number_format($amount, 2, '.', '');
+        
+        Log::info('PayPal amount after conversion: ' . $formattedAmount);
+        
+        $paypalRequest = new OrdersCreateRequest();
+        $paypalRequest->prefer('return=representation');
+        
+        // Define front-end URLs for success and cancel
+        // Make sure this URL matches what your front-end is actually expecting
+        $frontendUrl = config('app.frontend_url', 'http://127.0.0.1:8000');
+        
+        $successUrl = $frontendUrl . '/formation/' . $formation->id . '?paypal_status=success&userId=' . $user->id . '&formationId=' . $formation->id;
+        $cancelUrl = $frontendUrl . '/formation/' . $formation->id . '?paypal_status=cancel';
+        
+        // Construct the request body
+        $paypalRequest->body = [
+            'intent' => 'CAPTURE',
+            'purchase_units' => [[
+                'reference_id' => 'formation_' . $formation->id,
+                'description' => $formation->titre ?? 'vue',
+                'custom_id' => $user->id . '_' . $formation->id,
+                'amount' => [
+                    'currency_code' => 'EUR',
+                    'value' => $formattedAmount
+                ]
+            ]],
+            'application_context' => [
+                'brand_name' => config('app.name', 'Laravel'),
+                'landing_page' => 'NO_PREFERENCE', // Changed from BILLING to NO_PREFERENCE
+                'user_action' => 'PAY_NOW',
+                'return_url' => $successUrl,
+                'cancel_url' => $cancelUrl
+            ]
+        ];
+        
+        Log::info('PayPal request data:', [
+            'amount' => $formattedAmount,
+            'currency' => 'EUR',
+            'success_url' => $successUrl,
+            'cancel_url' => $cancelUrl
+        ]);
+        
+        $response = $this->paypalClient->execute($paypalRequest);
+        
+        // Log the entire response for debugging
+        Log::info('PayPal complete response', [
+            'response' => json_decode(json_encode($response->result), true)
+        ]);
+        
+        // Find the approval URL
+        $approvalUrl = null;
+        foreach ($response->result->links as $link) {
+            if ($link->rel === 'approve') {
+                $approvalUrl = $link->href;
+                break;
+            }
+        }
+        
+        if (!$approvalUrl) {
+            Log::error('PayPal approval URL not found in response');
+            return response()->json(['error' => 'Approval URL not found in PayPal response'], 500);
+        }
+        
+        Log::info('PayPal order created successfully', [
+            'orderId' => $response->result->id,
+            'approvalUrl' => $approvalUrl
+        ]);
+        
+        return response()->json([
+            'orderId' => $response->result->id,
+            'approvalUrl' => $approvalUrl
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Error creating PayPal order: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return response()->json([
+            'error' => 'PayPal error: ' . $e->getMessage(), 
+            'message' => 'Please check server logs for details'
+        ], 500);
     }
+}
 
     /**
      * Capture a PayPal order after approval

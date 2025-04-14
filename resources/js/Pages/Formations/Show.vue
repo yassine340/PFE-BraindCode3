@@ -505,30 +505,68 @@
         </button>
       </div>
       
-      <!-- PayPal Payment -->
-      <div v-else-if="paymentMethod === 'paypal'" class="space-y-4">
-        <div class="p-4 border border-gray-300 rounded bg-gray-50 text-center">
-          <p class="mb-2">Vous allez être redirigé vers PayPal pour finaliser votre paiement.</p>
-          <p class="text-sm text-gray-500">Le montant à payer est {{ props.formation.prix }}€</p>
+      <!-- Add this to your PayPal payment section in the modal -->
+    <div v-if="paymentMethod === 'paypal'" class="paypal-section">
+      <div v-if="!paypalApprovalUrl.valueOf" class="p-4">
+        <p class="text-center">Chargement de PayPal...</p>
+      </div>
+      
+      <div v-else class="p-4">
+        <h3 class="text-lg font-semibold mb-4">Payer avec PayPal</h3>
+        <p class="mb-4">Vous allez être redirigé vers PayPal pour finaliser votre paiement de {{props.formation.prix}} €.</p>
+        
+        <!-- Added billing info collection for PayPal too -->
+        <div class="mb-4">
+          <label class="block mb-2">Nom complet</label>
+          <input v-model="paymentInfo.name" class="w-full p-2 border rounded" type="text" placeholder="Votre nom complet" required>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block mb-2">Adresse</label>
+          <input v-model="paymentInfo.address" class="w-full p-2 border rounded" type="text" placeholder="Adresse" required>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label class="block mb-2">Pays</label>
+            <select v-model="paymentInfo.country" class="w-full p-2 border rounded" required>
+              <option value="">Sélectionner un pays</option>
+              <option v-for="country in countries" :key="country.code" :value="country.code">
+                {{ country.name }}
+              </option>
+            </select>
+          </div>
+          
+          <div>
+            <label class="block mb-2">Ville</label>
+            <select v-model="paymentInfo.city" class="w-full p-2 border rounded" :disabled="!paymentInfo.country" required>
+              <option value="">Sélectionner une ville</option>
+              <option v-for="city in cities" :key="city.id" :value="city.name">
+                {{ city.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block mb-2">Code postal</label>
+          <input v-model="paymentInfo.postal_code" class="w-full p-2 border rounded" type="text" placeholder="Code postal" required>
         </div>
         
         <button 
           @click="redirectToPayPal" 
-          :disabled="paymentProcessing || !paypalApprovalUrl" 
-          class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded"
-          :class="{ 'opacity-50 cursor-not-allowed': paymentProcessing || !paypalApprovalUrl }"
+          class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded"
+          :disabled="!paymentInfo.name || !paymentInfo.address || !paymentInfo.country || !paymentInfo.city || !paymentInfo.postal_code"
         >
-          <span v-if="paymentProcessing">Traitement en cours...</span>
-          <span v-else>Payer avec PayPal</span>
+          Continuer vers PayPal
         </button>
+        
+        <p v-if="paymentError" class="mt-4 text-red-500">{{ paymentError }}</p>
       </div>
     </div>
-    
-    <div class="text-xs text-gray-500 text-center">
-      <p>Tous les paiements sont sécurisés et cryptés.</p>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
   </AuthenticatedLayout>
 </template>
 
@@ -730,6 +768,50 @@ const changePaymentMethod = (method) => {
   }
 };
 
+// Process Stripe Payment
+const processStripePayment = async () => {
+  if (!stripe.value || !elements.value || !clientSecret.value) {
+    paymentError.value = "Configuration de paiement invalide";
+    return;
+  }
+
+  paymentProcessing.value = true;
+  paymentError.value = '';
+
+  try {
+    const { error: stripeError, paymentIntent } = await stripe.value.confirmCardPayment(
+      clientSecret.value,
+      {
+        payment_method: {
+          card: cardElement.value,
+          billing_details: {
+            name: paymentInfo.name,
+            address: {
+              line1: paymentInfo.address,
+              city: paymentInfo.city,
+              postal_code: paymentInfo.postal_code,
+              country: paymentInfo.country
+            }
+          }
+        }
+      }
+    );
+
+    if (stripeError) {
+      paymentError.value = stripeError.message || "Une erreur est survenue";
+    } else if (paymentIntent.status === 'succeeded') {
+      hasUserPaid.value = true;
+      showPaymentModal.value = false;
+      alert("Paiement réussi ! Vous avez maintenant accès au contenu complet de la formation.");
+    }
+  } catch (error) {
+    console.error('Error processing payment:', error);
+    paymentError.value = "Une erreur est survenue lors du traitement du paiement";
+  } finally {
+    paymentProcessing.value = false;
+  }
+};
+
 // Setup Stripe when the payment modal is shown
 const setupStripe = async () => {
   paymentProcessing.value = false;
@@ -817,7 +899,7 @@ const setupStripe = async () => {
   }
 };
 
-// Setup PayPal
+// First, let's fix the PayPal setup and redirect function
 const setupPayPal = async () => {
   paymentProcessing.value = false;
   paymentError.value = '';
@@ -840,107 +922,41 @@ const setupPayPal = async () => {
     paypalOrderId.value = response.data.orderId;
     paypalApprovalUrl.value = response.data.approvalUrl;
     
+    // Store required data in localStorage before redirection
+    localStorage.setItem('paypalOrderId', paypalOrderId.value);
+    localStorage.setItem('userId', userId.value.toString());
+    localStorage.setItem('formationId', props.formation.id.toString());
+    localStorage.setItem('paypalReturnTime', Date.now().toString());
+    
+    // Important: Don't redirect immediately - show a confirmation button
+    // This allows the browser to properly store data before navigation
   } catch (error) {
     console.error('Error setting up PayPal:', error);
     paymentError.value = "Erreur lors de l'initialisation du paiement PayPal";
   }
 };
 
-// Process payment with Stripe
-const processStripePayment = async () => {
-  if (!cardElementComplete.value) {
-    paymentError.value = "Veuillez compléter les informations de carte";
-    return;
-  }
-  
-  if (!paymentInfo.address || !paymentInfo.postal_code || !paymentInfo.city || !paymentInfo.country) {
-    paymentError.value = "Veuillez entrer l'adresse de facturation complète";
-    return;
-  }
-  
-  paymentProcessing.value = true;
-  paymentError.value = '';
-  
-  try {
-    console.log("Attempting payment with client secret:", clientSecret.value ? "Available" : "Missing");
-    console.log("Card element complete:", cardElementComplete.value);
-    
-    // Confirm payment with Stripe.js
-    const result = await stripe.value.confirmCardPayment(clientSecret.value, {
-      payment_method: {
-        card: cardElement.value,
-        billing_details: {
-          name: paymentInfo.name,
-        }
-      },
-    });
-    
-    console.log("Payment result:", result);
-    
-    if (result.error) {
-      // Show error to customer
-      console.error("Stripe error:", result.error);
-      paymentError.value = result.error.message;
-      paymentProcessing.value = false;
-    } else {
-      if (result.paymentIntent.status === 'succeeded') {
-        // Payment successful - confirm on server
-        console.log("Payment succeeded, confirming with server...");
-        
-        const confirmResponse = await axios.post('/stripe/confirm-payment', {
-          paymentIntentId: result.paymentIntent.id,
-          userId: userId.value,
-          formationId: props.formation.id,
-          Pays: paymentInfo.country,
-          ville: paymentInfo.city,
-          adresse: paymentInfo.address,
-          code_postal: paymentInfo.postal_code        
-        });
-        
-        console.log("Server confirmation response:", confirmResponse.data);
-        
-        if (confirmResponse.data.success) {
-          hasUserPaid.value = true;
-          showPaymentModal.value = false;
-          alert("Paiement réussi ! Vous avez maintenant accès au contenu complet de la formation.");
-        } else {
-          paymentError.value = "Le paiement a été effectué mais une erreur est survenue lors de l'enregistrement.";
-        }
-      } else {
-        paymentError.value = "Le paiement est en attente ou a échoué.";
-      }
-    }
-  } catch (error) {
-    console.error('Error processing payment:', error);
-    paymentError.value = "Une erreur est survenue lors du traitement du paiement: " + (error.message || "Erreur inconnue");
-  } finally {
-    paymentProcessing.value = false;
-  }
-};
-
-// Process PayPal payment - redirect to PayPal
+// Create a dedicated function to handle the redirect
 const redirectToPayPal = () => {
   if (paypalApprovalUrl.value) {
-    // Store the orderId in localStorage or sessionStorage to retrieve after redirect
-    sessionStorage.setItem('paypalOrderId', paypalOrderId.value);
-    sessionStorage.setItem('userId', userId.value.toString());
-    sessionStorage.setItem('formationId', props.formation.id.toString());
-    
-    // Redirect to PayPal approval URL
-    window.location.href = paypalApprovalUrl.value;
+    // Allow a small delay before redirect to ensure localStorage is updated
+    setTimeout(() => {
+      window.location.href = paypalApprovalUrl.value;
+    }, 100);
   } else {
-    paymentError.value = "Erreur lors de la redirection vers PayPal";
+    paymentError.value = "Erreur: URL de redirection PayPal non disponible";
   }
 };
 
-// Handle PayPal return (this needs to be called on your return page)
+// Fix the PayPal return handler to use localStorage consistently
 const handlePayPalReturn = async () => {
-  const orderId = sessionStorage.getItem('paypalOrderId');
-  const storedUserId = sessionStorage.getItem('userId');
-  const storedFormationId = sessionStorage.getItem('formationId');
+  const orderId = localStorage.getItem('paypalOrderId');
+  const storedUserId = localStorage.getItem('userId');
+  const storedFormationId = localStorage.getItem('formationId');
   
   if (!orderId || !storedUserId || !storedFormationId) {
     console.error('Missing PayPal return information');
+    paymentError.value = "Données de retour PayPal manquantes";
     return;
   }
   
@@ -949,8 +965,13 @@ const handlePayPalReturn = async () => {
     
     const response = await axios.post('/paypal/capture-order', {
       orderId: orderId,
-      userId: storedUserId,
-      formationId: storedFormationId
+      userId: parseInt(storedUserId),
+      formationId: parseInt(storedFormationId),
+      // Add missing fields that the backend expects
+      Pays: paymentInfo.country || '',
+      ville: paymentInfo.city || '',
+      adresse: paymentInfo.address || '',
+      code_postal: paymentInfo.postal_code || ''
     });
     
     if (response.data.success) {
@@ -958,37 +979,49 @@ const handlePayPalReturn = async () => {
       showPaymentModal.value = false;
       alert("Paiement PayPal réussi ! Vous avez maintenant accès au contenu complet de la formation.");
       
-      // Clean up session storage
-      sessionStorage.removeItem('paypalOrderId');
-      sessionStorage.removeItem('userId');
-      sessionStorage.removeItem('formationId');
+      // Clean up localStorage
+      localStorage.removeItem('paypalOrderId');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('formationId');
+      localStorage.removeItem('paypalReturnTime');
     } else {
       paymentError.value = "Une erreur est survenue lors de la confirmation du paiement PayPal.";
     }
   } catch (error) {
     console.error('Error capturing PayPal payment:', error);
-    paymentError.value = "Une erreur est survenue lors du traitement du paiement PayPal: " + (error.response?.data?.message || error.message || "Erreur inconnue");
+    paymentError.value = "Une erreur est survenue lors du traitement du paiement PayPal: " + 
+      (error.response?.data?.message || error.message || "Erreur inconnue");
   } finally {
     paymentProcessing.value = false;
   }
 };
 
-// Check for PayPal return parameters on mount
+// Fix the check for PayPal return parameters
 const checkForPayPalReturn = () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const paypalPaymentStatus = urlParams.get('paypal_status');
+  const paypalStatus = urlParams.get('paypal_status');
+  const token = urlParams.get('token');
   
-  if (paypalPaymentStatus === 'success') {
-    handlePayPalReturn();
-  } else if (paypalPaymentStatus === 'cancel') {
-    paymentError.value = "Paiement PayPal annulé.";
-    // Clean up session storage
-    sessionStorage.removeItem('paypalOrderId');
-    sessionStorage.removeItem('userId');
-    sessionStorage.removeItem('formationId');
+  console.log('Checking PayPal return parameters:', { 
+    paypalStatus, 
+    token,
+    storedOrderId: localStorage.getItem('paypalOrderId')
+  });
+  
+  // If we have a success status or token from PayPal
+  if ((paypalStatus === 'success' || token) && localStorage.getItem('paypalOrderId')) {
+    // Make sure we don't process the same return multiple times
+    const returnTime = parseInt(localStorage.getItem('paypalReturnTime') || '0');
+    const currentTime = Date.now();
+    
+    // Only process if the return is recent (within 10 minutes)
+    if (currentTime - returnTime < 10 * 60 * 1000) {
+      handlePayPalReturn();
+    } else {
+      console.log('Ignoring old PayPal return data');
+    }
   }
 };
-
 // Add this to fetch data on component mount
 onMounted(() => {
   checkUserPaymentStatus();
