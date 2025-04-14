@@ -16,12 +16,13 @@ class VideoProgress extends Model
         'user_id',
         'video_id',
         'current_time',
-        'completed'
+        'duration'
+
     ];
     
-    protected $casts = [
-        'completed' => 'boolean',
-    ];
+    //protected $casts = [
+       // 'completed' => 'boolean',
+   // ];
     
     // Relations
     public function user()

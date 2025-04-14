@@ -16,13 +16,13 @@ class CreateVideoProgressesTable extends Migration
         Schema::create('video_progresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('video_id')->constrained()->onDelete('cascade');
-            $table->unsignedInteger('current_time')->default(0); // Position en secondes
-            $table->boolean('completed')->default(false);
+            $table->string('video_id');
+            $table->float('current_time')->default(0);
+            $table->float('duration')->nullable();
             $table->timestamps();
             
-            // Chaque utilisateur ne peut avoir qu'une progression par vidéo
             $table->unique(['user_id', 'video_id']);
+
         });
     }
 

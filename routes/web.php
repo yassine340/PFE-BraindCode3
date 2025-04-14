@@ -264,8 +264,8 @@ Route::get('/stats', function () {
 })->middleware(['auth'])->name('user.stats');
 
 Route::middleware('auth')->group(function () {
-    Route::post('/video-progress', [VideoProgressController::class, 'store']);
-    Route::get('/video-progress/{videoId}', [VideoProgressController::class, 'show']);
+    //Route::post('/video-progress', [VideoProgressController::class, 'store']);
+   // Route::get('/video-progress/{videoId}', [VideoProgressController::class, 'show']);
     // Route pour afficher tous les utilisateurs (admin)
 Route::get('/admin/users', [AdminController::class, 'allUsers'])
 ->name('admin.users')
@@ -282,4 +282,9 @@ Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])
 Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])
   ->name('admin.users.delete')
   ->middleware(['verified']);
+});
+Route::middleware('auth')->group(function () {
+    Route::post('/video/save-progress', [VideoProgressController::class, 'saveProgress']);
+    Route::get('/video/get-progress', [VideoProgressController::class, 'getProgress']);
+    Route::delete('/video/reset-progress', [VideoProgressController::class, 'resetProgress']);
 });
