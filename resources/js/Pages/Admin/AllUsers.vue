@@ -95,16 +95,7 @@ const getStatusClass = (status) => {
 
 <template>
     <Head title="Tous les utilisateurs" />
-    
     <AuthenticatedLayout>
-        <template #header>
-            <div class="flex items-center justify-between">
-                <h2 class="text-xl font-semibold leading-tight text-gray-800">
-                    Tous les utilisateurs
-                </h2>
-            </div>
-        </template>
-
         <div class="py-12">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <!-- Stats Section -->

@@ -18,20 +18,6 @@ class FormationController extends Controller
                            ->with('user:id,first_name,last_name,email') // Chargement de l'utilisateur (formateur)
                            ->where('est_valide', 'Validée'); // Par défaut, ne montrer que les formations validées
         
-        // Si l'utilisateur est un utilisateur standard ou une startup, ne montrer que les formations validées ET publiées
-        if (auth()->user()->role === 'user' || auth()->user()->role === 'startup') {
-            $query->where('est_valide', true)
-                  ->where('est_publiee', true);
-        }
-        // Si l'utilisateur est un formateur, ne montrer que ses propres formations
-        else if (auth()->user()->role === 'formateur') {
-            $query->where('user_id', auth()->id());
-        }
-        // Sinon, si un paramètre de requête est fourni pour filtrer les formations
-        else if ($request->has('show_all') && $request->show_all === 'false') {
-            $query->where('est_valide', true);
-        }
-        
         $formations = $query->get();
         
         return Inertia::render('Formations/Index', [
@@ -90,7 +76,6 @@ class FormationController extends Controller
                 'image_formation' => $imagePath,
                 'category_id' => $request->category_id,
                 'user_id' => auth()->id(), // ID de l'utilisateur connecté (formateur)
-                //'est_valide' => auth()->user()->role === 'admin' ? true : false, // Validé automatiquement si admin
                 'est_publiee' => false // Non publiée par défaut
             ]);
 

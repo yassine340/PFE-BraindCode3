@@ -340,4 +340,8 @@ public function countFormateurEnAttente()
         return response()->json(['error' => 'Failed to count formateurs'], 500);
     }
 }
+public function isAdmin()
+    {
+        return response()->json(['is_admin' => Auth::user()->role === 'admin']);
+    }
 }

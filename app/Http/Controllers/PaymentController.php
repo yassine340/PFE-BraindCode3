@@ -95,9 +95,9 @@ class PaymentController extends Controller
     }
 
     /**
- * Create a PayPal order
- */
-public function createPayPalOrder(Request $request)
+     * Create a PayPal order
+     */
+    public function createPayPalOrder(Request $request)
 {
     try {
         Log::info('Creating PayPal order', $request->all());
@@ -112,42 +112,38 @@ public function createPayPalOrder(Request $request)
             return response()->json(['error' => 'Formation not found'], 404);
         }
         
-        // Ensure consistent amount formatting - Always use decimal format for PayPal
+        // Check if amount is already in correct format
         $amount = $request->amount;
         if ($amount > 100) { // This assumes no product costs more than €100
             $amount = $amount / 100;
         }
         
-        // Format amount properly with 2 decimal places
-        $formattedAmount = number_format($amount, 2, '.', '');
+        Log::info('PayPal amount after conversion: ' . $amount);
         
-        Log::info('PayPal amount after conversion: ' . $formattedAmount);
+        $orderRequest = new OrdersCreateRequest();
+        $orderRequest->prefer('return=representation');
         
-        $paypalRequest = new OrdersCreateRequest();
-        $paypalRequest->prefer('return=representation');
-        
-        // Define front-end URLs for success and cancel
-        // Make sure this URL matches what your front-end is actually expecting
-        $frontendUrl = config('app.frontend_url', 'http://127.0.0.1:8000');
-        
-        $successUrl = $frontendUrl . '/formation/' . $formation->id . '?paypal_status=success&userId=' . $user->id . '&formationId=' . $formation->id;
-        $cancelUrl = $frontendUrl . '/formation/' . $formation->id . '?paypal_status=cancel';
+        // Define URLs properly with formation ID
+        $baseUrl = 'http://127.0.0.1:8000';
+        $successUrl = $baseUrl . '/paypal/success?formationId=' . $formation->id;
+        $cancelUrl = $baseUrl . '/paypal/cancel?formationId=' . $formation->id;
         
         // Construct the request body
-        $paypalRequest->body = [
+        $orderRequest->body = [
             'intent' => 'CAPTURE',
             'purchase_units' => [[
                 'reference_id' => 'formation_' . $formation->id,
-                'description' => $formation->titre ?? 'vue',
+                'description' => $formation->titre,
                 'custom_id' => $user->id . '_' . $formation->id,
                 'amount' => [
                     'currency_code' => 'EUR',
-                    'value' => $formattedAmount
+                    'value' => number_format($amount, 2, '.', '')
                 ]
             ]],
             'application_context' => [
-                'brand_name' => config('app.name', 'Laravel'),
-                'landing_page' => 'NO_PREFERENCE', // Changed from BILLING to NO_PREFERENCE
+                'brand_name' => config('app.name', 'Your Application'),
+                'landing_page' => 'BILLING',
+                'shipping_preference' => 'NO_SHIPPING',
                 'user_action' => 'PAY_NOW',
                 'return_url' => $successUrl,
                 'cancel_url' => $cancelUrl
@@ -155,42 +151,30 @@ public function createPayPalOrder(Request $request)
         ];
         
         Log::info('PayPal request data:', [
-            'amount' => $formattedAmount,
+            'amount' => $amount,
             'currency' => 'EUR',
             'success_url' => $successUrl,
             'cancel_url' => $cancelUrl
         ]);
         
-        $response = $this->paypalClient->execute($paypalRequest);
+        $response = $this->paypalClient->execute($orderRequest);
         
-        // Log the entire response for debugging
-        Log::info('PayPal complete response', [
-            'response' => json_decode(json_encode($response->result), true)
+        Log::info('PayPal order created', [
+            'id' => $response->result->id,
+            'status' => $response->result->status
         ]);
         
-        // Find the approval URL
-        $approvalUrl = null;
+        // Return the PayPal order ID and approval link
         foreach ($response->result->links as $link) {
             if ($link->rel === 'approve') {
-                $approvalUrl = $link->href;
-                break;
+                return response()->json([
+                    'orderId' => $response->result->id,
+                    'approvalUrl' => $link->href
+                ]);
             }
         }
         
-        if (!$approvalUrl) {
-            Log::error('PayPal approval URL not found in response');
-            return response()->json(['error' => 'Approval URL not found in PayPal response'], 500);
-        }
-        
-        Log::info('PayPal order created successfully', [
-            'orderId' => $response->result->id,
-            'approvalUrl' => $approvalUrl
-        ]);
-        
-        return response()->json([
-            'orderId' => $response->result->id,
-            'approvalUrl' => $approvalUrl
-        ]);
+        return response()->json(['error' => 'Approval URL not found'], 500);
         
     } catch (\Exception $e) {
         Log::error('Error creating PayPal order: ' . $e->getMessage(), [
@@ -199,10 +183,7 @@ public function createPayPalOrder(Request $request)
             'trace' => $e->getTraceAsString()
         ]);
         
-        return response()->json([
-            'error' => 'PayPal error: ' . $e->getMessage(), 
-            'message' => 'Please check server logs for details'
-        ], 500);
+        return response()->json(['error' => $e->getMessage()], 500);
     }
 }
 
@@ -318,23 +299,33 @@ public function createPayPalOrder(Request $request)
     /**
      * Handle PayPal success redirection
      */
-    public function paypalSuccess(Request $request)
-    {
-        Log::info('PayPal success callback received', $request->all());
-        
-        // Here you can implement any necessary redirection logic
-        // This method should be linked to route('paypal.success')
-        
-        return view('payment.success');
-    }
+    /**
+ * Handle PayPal success redirection
+ */
+public function paypalSuccess(Request $request)
+{
+    Log::info('PayPal success callback received', $request->all());
     
+    // Extract any needed parameters from the request
+    $orderId = $request->get('token'); // PayPal typically returns token parameter
+    $formationId = $request->get('formationId');
+    
+    // Redirect to the Vue.js route
+    return redirect()->to('http://127.0.0.1:8000/formations/' . $formationId . '?payment_status=success&order_id=' . $orderId);
+}
+
     /**
      * Handle PayPal cancel redirection
      */
     public function paypalCancel(Request $request)
     {
         Log::info('PayPal cancel callback received', $request->all());
-        return view('payment.cancel');
+        
+        // Extract any needed parameters
+        $formationId = $request->get('formationId');
+        
+        // Redirect to the Vue.js route
+        return redirect()->to('http://127.0.0.1:8000/formations/' . $formationId . '?payment_status=cancelled');
     }
 
     /**

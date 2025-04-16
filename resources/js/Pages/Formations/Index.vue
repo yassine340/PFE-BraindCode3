@@ -1,7 +1,7 @@
 <template>
   <Head title="Découvrir nos formations" />
   <AuthenticatedLayout>
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-10">
+    <div class="min-h-screen py-12">
       <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
         <!-- En-tête avec animation -->
         <div class="text-center mb-12">
@@ -13,23 +13,57 @@
           </p>
         </div>
 
-<!-- Barre de recherche -->
-<div class="mb-10 max-w-md mx-auto">
-  <div class="relative flex items-center w-full h-12 rounded-lg focus-within:shadow-lg bg-white overflow-hidden border border-gray-200 shadow-sm">
-    <div class="grid place-items-center h-full w-12 text-gray-400">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    </div>
-    <input
-      v-model="searchQuery"
-      @input="searchFormations"
-      class="peer h-full w-full outline-none text-sm text-gray-700 pr-2 border-0 focus:ring-0"
-      type="text"
-      placeholder="Rechercher une formation..."
-    />
-  </div>
-</div>
+        <!-- Filtres et recherche -->
+        <div class="mb-10 max-w-3xl mx-auto flex flex-col md:flex-row gap-4">
+          <!-- Barre de recherche -->
+          <div class="flex-1">
+            <div class="relative flex items-center w-full h-12 rounded-lg focus-within:shadow-lg bg-white overflow-hidden border border-gray-200 shadow-sm">
+              <div class="grid place-items-center h-full w-12 text-gray-400">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <input
+                v-model="searchQuery"
+                @input="searchFormations"
+                class="peer h-full w-full outline-none text-sm text-gray-700 pr-2 border-0 focus:ring-0"
+                type="text"
+                placeholder="Rechercher une formation..."
+              />
+            </div>
+          </div>
+
+          <!-- Sélection de catégorie -->
+          <div class="md:w-1/3">
+            <Dropdown align="right" width="48">
+              <template #trigger>
+                <span class="inline-flex rounded-md w-full">
+                  <button type="button" class="inline-flex items-center justify-between w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition duration-200 ease-in-out hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500/70">
+                    {{ selectedCategoryName || "Toutes les catégories" }}
+                    <svg class="h-4 w-4 ml-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </button>
+                </span>
+              </template>
+              
+              <template #content>
+                <DropdownLink @click="resetCategory" class="hover:bg-blue-500/10 transition-colors duration-150">
+                  Toutes les catégories
+                </DropdownLink>
+                <DropdownLink v-for="category in categories" :key="category.id"
+                  @click="() => {
+                    selectedCategory = category.id.toString();
+                    selectedCategoryName = category.name;
+                    filterFormations();
+                  }"
+                  class="hover:bg-blue-500/10 transition-colors duration-150">
+                  {{ category.name }}
+                </DropdownLink>
+              </template>
+            </Dropdown>
+          </div>
+        </div>
 
         <!-- Ajouter une formation (Admin) -->
         <div v-if="role !== 'user' && role !== 'startup'" class="mb-10 text-center">
@@ -59,7 +93,7 @@
                 </svg>
               </div>
               
-              <!--date of creation-->
+              <!-- Date de création -->
               <div class="absolute top-3 right-3 bg-white bg-opacity-90 rounded-full py-1 px-3 text-sm font-semibold text-indigo-600 shadow-sm">
                 {{ formatDateTime(formation.created_at) }}
               </div>
@@ -147,11 +181,16 @@
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { Head } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import dayjs from 'dayjs';
-
+import Dropdown from '@/Components/Dropdown.vue';
+import DropdownLink from '@/Components/DropdownLink.vue';
+import axios from 'axios';
 
 // Function to format the date using dayjs
+const formatDateTime = (date) => {
+    return dayjs(date).format('DD/MM/YYYY HH:mm'); // Example output: "31/07/2024 14:30"
+};
 
 // Définir le type User
 interface User {
@@ -160,9 +199,6 @@ interface User {
   email: string;
   role: string;
 }
-const formatDateTime = (date) => {
-    return dayjs(date).format('DD/MM/YYYY HH:mm'); // Example output: "31/07/2024 14:30"
-};
 
 // Définir les propriétés de la page
 interface PageProps {
@@ -182,6 +218,7 @@ interface Formation {
   duree?: string;
   modules?: Module[];
 }
+
 interface Module {
   id: number;
   titre: string;
@@ -189,15 +226,47 @@ interface Module {
   ordre: number;
   duree_estimee: number;
 }
+
+interface Category {
+  id: number;
+  name: string;
+}
+
+const props = defineProps<{
+  formations: Formation[];
+  categories?: Category[];
+}>();
+
+// Initialize reactive variables
 const searchQuery = ref("");
+const formations = ref(props.formations);
+const categories = ref<Category[]>([]);
+const selectedCategory = ref("");
+const selectedCategoryName = ref("");
+
+// Watch for changes in props.formations
+watch(() => props.formations, newVal => formations.value = newVal || []);
+
+// Filter formations by category
+const filterFormations = () => {
+  if (selectedCategory.value) {
+    router.get("/formationscat", { category: selectedCategory.value }, { preserveState: true });
+  }
+};
+
+// Reset category filter
+const resetCategory = () => {
+  selectedCategory.value = "";
+  selectedCategoryName.value = "";
+  router.get("/formations", {}, { preserveState: true });
+};
+
+// Search formations
 const searchFormations = async () => {
   await router.get("/formations", {
     search: searchQuery.value,
   }, { preserveState: true });
 };
-defineProps<{
-  formations: Formation[];
-}>();
 
 // Accéder à l'objet route() d'Inertia
 const page = usePage<PageProps>();
@@ -205,6 +274,15 @@ const page = usePage<PageProps>();
 // Récupérer le rôle de l'utilisateur
 const role = computed(() => page.props.auth.user?.role || 'user');
 
+// Load categories on mount
+onMounted(async () => {
+  try {
+    const response = await axios.get("/categories");
+    categories.value = response.data;
+  } catch (error) {
+    console.error("Erreur lors du chargement des catégories", error);
+  }
+});
 </script>
 
 <style>

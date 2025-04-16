@@ -5,6 +5,7 @@ import { Swiper, SwiperSlide } from "swiper/vue";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
+import Footer from "@/Components/Footer.vue";
 
 defineProps({
   canLogin: Boolean,
@@ -298,12 +299,7 @@ const themeClasses = computed(() => ({
     </main>
 
     <!-- Footer -->
-    <footer 
-      class="py-6 text-center border-t" 
-      :class="isDarkMode ? 'border-gray-700 text-gray-400' : 'border-gray-300 text-gray-600'"
-    >
-      &copy; 2025 Plateforme E-Learn. Tous droits réservés.
-    </footer>
+    <Footer />
   </div>
 </template>
 <style>

@@ -39,7 +39,7 @@ return [
         'public' => env('STRIPE_KEY'),
     ],
     'paypal' => [
-        'mode' => env('PAYPAL_MODE', 'sandbox'),
+        'mode' => 'sandbox',
         'client_id' => env('PAYPAL_CLIENT_ID'),
         'client_secret' => env('PAYPAL_CLIENT_SECRET'),
     ],

@@ -19,8 +19,9 @@ use App\Http\Controllers\QuizController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\ReponseController;
 use App\Http\Controllers\GamificationController;
-use App\Models\Question;
 use App\Http\Controllers\PaymentController;
+use App\Http\Middleware\AdminMiddleware;
+use App\Http\Middleware\AdminFormateurMiddleware;
 
 
 // Route pour afficher la page d'accueil
@@ -43,9 +44,11 @@ Route::get('/dashboard', function () {
 //************************************************************************************************* */
 
 // Route pour afficher le tableau de bord formateur
+Route::middleware(['auth','verified',AdminFormateurMiddleware::class])->group(function () {
 Route::get('/DashboardFormateur', function () {
-    return Inertia::render('DashboardFormateur');  // Assurez-vous que le fichier Vue est bien ici
-})->middleware(['auth'])->name('DashboardFormateur');  // Corrigé ici : 'DashboardFormateur' au lieu de 'dashboardFormateur'
+    return Inertia::render('DashboardFormateur'); 
+})->name('DashboardFormateur'); 
+}); 
 
 //************************************************************************************************* */
 
@@ -59,44 +62,41 @@ Route::middleware('auth')->group(function () {
 //************************************************************************************************* */
 
 // Route pour afficher le tableau de bord administrateur
-Route::get('/dashboardAdmin', function () {
-    return Inertia::render('DashboardAdmin');
-})->middleware(['auth'])->name('dashboardAdmin');
+Route::middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::get('/dashboardAdmin', function () {
+        return Inertia::render('DashboardAdmin');
+    })->name('dashboardAdmin');
+    
     Route::get('/payments', [AdminController::class, 'index']);
     Route::get('/payments/statistics', [AdminController::class, 'statistics']);
     Route::get('/payments/{id}', [AdminController::class, 'show']);
+    //Router API 
+    Route::get('/api/formateur-en-attente', [AdminController::class, 'countFormateurEnAttente']);
+
+    // Route pour afficher la liste des formateurs en attente
+    Route::get('/formateurs-en-attente', [AdminController::class, 'getFormateursEnAttente'])
+        ->name('formateur.en.attente');
+    // Valider un formateur
+    Route::post('/formateurs/{id}/valider', [AdminController::class, 'validerFormateur'])->name('formateurs.valider');
+    // Rejeter un formateur
+    Route::post('/formateurs/{id}/rejeter', [AdminController::class, 'rejeterFormateur'])->name('formateurs.rejeter');
+    //Afficher les formateurs en attente
+    Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formateurs.index');
+    //Afficher une formateurs
+    Route::get('/formateurs/{id}', [AdminController::class, 'showFormateur'])->name('formateurs.show');
+    //Afficher le formulaire de modification d'un formateur
+    Route::get('/formateurs/{id}/edit', [AdminController::class, 'editFormateur'])->name('formateurs.edit');
+    //Mettre à jour un formateur
+    Route::put('/formateurs/{id}', [AdminController::class, 'updateFormateur'])->name('formateurs.update');
+    //Supprimer un formateur
+    Route::delete('/formateurs/{id}', [AdminController::class, 'deleteFormateur'])->name('formateur.delete');
+});
 
 require __DIR__.'/auth.php';
 
 //************************************************************************************************* */
 
-Route::get('/auth/facebook', [FacebookController::class, 'facebookpage'])->name('auth.facebook');
-Route::get('/auth/facebook/callback', [FacebookController::class, 'handleFacebookCallback']);
 
-//************************************************************************************************* */
-
-//
-Route::get('/api/formateur-en-attente', [AdminController::class, 'countFormateurEnAttente']);
-
-// Route pour afficher la liste des formateurs en attente
-Route::get('/formateurs-en-attente', [AdminController::class, 'getFormateursEnAttente'])
-    ->name('formateur.en.attente');
-// Valider un formateur
-Route::post('/formateurs/{id}/valider', [AdminController::class, 'validerFormateur'])->name('formateurs.valider');
-// Rejeter un formateur
-Route::post('/formateurs/{id}/rejeter', [AdminController::class, 'rejeterFormateur'])->name('formateurs.rejeter');
-//Afficher les formateurs en attente
-Route::get('/formateurs', [AdminController::class, 'Listeformateur'])->name('formateurs.index');
-//Afficher une formateurs
-Route::get('/formateurs/{id}', [AdminController::class, 'showFormateur'])->name('formateurs.show');
-//Afficher le formulaire de modification d'un formateur
-Route::get('/formateurs/{id}/edit', [AdminController::class, 'editFormateur'])->name('formateurs.edit');
-//Mettre à jour un formateur
-Route::put('/formateurs/{id}', [AdminController::class, 'updateFormateur'])->name('formateurs.update');
-//Supprimer un formateur
-Route::delete('/formateurs/{id}', [AdminController::class, 'deleteFormateur'])->name('formateur.delete');
-
-//************************************************************************************************* */
 
 // Route pour stocker une vidéo
 Route::post('/upload-video', [VideoController::class, 'upload']);
@@ -126,7 +126,8 @@ Route::get('/documents', [DocumentController::class, 'index'])->name('documents.
 
 Route::get('/DashboardAdmin', function () {
     return Inertia::render('DashboardAdmin');
-})->name('DashboardAdmin');
+})->middleware(['auth', 'verified'])->name('DashboardAdmin');
+// Route pour afficher le tableau de bord formateur
 Route::get('/DashboardFormateur', function () {
     return Inertia::render('DashboardFormateur');
 })->name('DashboardFormateur');
@@ -148,21 +149,36 @@ Route::post('/formations/{id}/valider', [AdminController::class, 'validerFormati
 Route::post('/formations/{id}/rejeter', [AdminController::class, 'rejeterFormation'])
     ->name('formations.rejeter');
 // Afficher le formulaire de création d'une formation
-Route::get('/formations/create', [FormationController::class, 'create'])->name('formations.create');
-// Enregistrer la formation dans la base de données
-Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
+
 // Afficher toutes les formations (index)
 Route::get('/formations/index', [FormationController::class, 'index'])->name('formations.index');
-// Afficher une formation (GET)
-Route::get('/formations/count', [AdminController::class, 'countFormations'])
-->Middleware(['verified']);
+
+Route::middleware(['auth','verified',AdminFormateurMiddleware::class])->group(function () {
+    Route::get('/formations/create', [FormationController::class, 'create'])->name('formations.create');
+    // Enregistrer la formation dans la base de données
+    Route::post('/formations', [FormationController::class, 'store'])->name('formations.store');
+    Route::get('/formations/count', [AdminController::class, 'countFormations']);
+    Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');
+    // Supprimer une formation (DELETE)
+    Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name('formations.destroy');
+    // Afficher le formulaire de modification d'une formation
+    Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name('formations.edit');
+    // Mettre à jour une formation (PUT)
+    Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
+
+        // Afficher une formation (GET)
+    Route::get('/formations/count', [AdminController::class, 'countFormations'])
+    ->Middleware(['verified']); 
+    // Supprimer une formation (DELETE)
+    Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name('formations.destroy');
+    // Afficher le formulaire de modification d'une formation
+    Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name('formations.edit');
+    // Mettre à jour une formation (PUT)
+    Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
+});
+
 Route::get('/formations/{id}', [FormationController::class, 'show'])->name('formations.show');
-// Supprimer une formation (DELETE)
-Route::delete('/formations/{id}', [FormationController::class, 'destroy'])->name('formations.destroy');
-// Afficher le formulaire de modification d'une formation
-Route::get('/formations/{id}/edit', [FormationController::class, 'edit'])->name('formations.edit');
-// Mettre à jour une formation (PUT)
-Route::put('/formations/{id}', [FormationController::class, 'update'])->name('formations.update');
+
 // Afficher le formulaire avec catégories
 Route::get('/formationscat', function (Request $request) {
     $query = Formation::query();
@@ -183,7 +199,7 @@ Route::get('/formationscat', function (Request $request) {
     ]);
 });
 
-
+Route::middleware(['auth','verified',AdminMiddleware::class])->group(function () {
 // Route pour afficher la liste des catégories
 Route::get('/categorie', [CategoryController::class, 'index'])->name('categories.index');
 // Route pour afficher le formulaire de création d'une catégorie
@@ -196,8 +212,7 @@ Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])-
 Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
 // Route pour afficher le formulaire de modification d'une catégorie
 Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-
-
+});
 // afficher les categories
 Route::get('/categories', function () {
     return response()->json(Category::all());
@@ -288,31 +303,40 @@ Route::post('/paypal/create-order', [PaymentController::class, 'createPayPalOrde
 Route::post('/paypal/capture-order', [PaymentController::class, 'capturePayPalOrder']);
 Route::post('/paypal/record-failed-payment', [PaymentController::class, 'recordFailedPayPalPayment']);
 
-// PayPal redirect routes
-Route::get('paypal/success', [PaymentController::class, 'paypalSuccess'])->name('paypal.success');
-Route::get('paypal/cancel', [PaymentController::class, 'paypalCancel'])->name('paypal.cancel');
+
 
 //admin transaction
-Route::get('/PaymentTransactionsAdmin',function () {
-    return Inertia::render('Admin/PaymentTransactionsAdmin');
-})->name('PaymentTransactionsAdmin');
+Route::middleware(['auth', AdminMiddleware::class])->group(function () {
+    Route::get('/PaymentTransactionsAdmin',function () {
+        return Inertia::render('Admin/PaymentTransactionsAdmin');
+    })->name('PaymentTransactionsAdmin');
 
-    // Route pour afficher tous les utilisateurs (admin)
-    Route::get('/admin/users', [AdminController::class, 'allUsers'])
-    ->name('admin.users')
-    ->middleware(['verified' ]);
-      // Nouvelles routes à ajouter
-      Route::get('/admin/users/{user}', [AdminController::class, 'showUser'])
-      ->name('admin.users.show')
-      ->middleware(['verified']);
-      
-    Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])
-      ->name('admin.users.edit')
-      ->middleware(['verified']);
-      
-    Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])
-      ->name('admin.users.delete')
-      ->middleware(['verified']);
-    Route::get('/users/count', [AdminController::class, 'countUser'])
-      ->Middleware(['verified']);
- 
+        // Route pour afficher tous les utilisateurs (admin)
+        Route::get('/admin/users', [AdminController::class, 'allUsers'])
+        ->name('admin.users')
+        ->middleware(['verified' ]);
+        // Nouvelles routes à ajouter
+        Route::get('/admin/users/{user}', [AdminController::class, 'showUser'])
+        ->name('admin.users.show')
+        ->middleware(['verified']);
+        
+        Route::get('/admin/users/{user}/edit', [AdminController::class, 'edit'])
+        ->name('admin.users.edit')
+        ->middleware(['verified']);
+        
+        Route::delete('/admin/users/{user}', [AdminController::class, 'destroy'])
+        ->name('admin.users.delete')
+        ->middleware(['verified']);
+        Route::get('/users/count', [AdminController::class, 'countUser'])
+        ->Middleware(['verified']);
+});
+ // Add this to your routes/web.php file
+Route::get('/formation/{id}', function ($id, Request $request) {
+    Log::info('Return from PayPal detected', [
+        'formation_id' => $id,
+        'query_params' => $request->all()
+    ]);
+    
+    // Continue to your normal controller action
+    return app(FormationController::class)->show($id);
+})->name('formation.show');

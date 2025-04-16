@@ -1,22 +1,36 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import { Link } from '@inertiajs/vue3';
+import Footer from "@/Components/Footer.vue";
 </script>
 
 <template>
-    <div
-        class="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0 dark:bg-gray-900"
-    >
-        <div>
-            <Link href="/">
-                <ApplicationLogo class="h-20 w-20 fill-current text-gray-500" />
+    <div class="flex min-h-screen flex-col items-center bg-[#F1F9FF] pt-6 sm:justify-center sm:pt-0">
+        <div class="mb-8 text-center">
+            <Link href="/" class="inline-block">
+                <img src="/image/logos/BraindCode.png" class="img-fluid" style="width: 200px;" alt="Logo" />
             </Link>
         </div>
 
-        <div
-            class="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg dark:bg-gray-800"
-        >
+        <div class="w-full ">
             <slot />
         </div>
+    <!-- Footer section -->
+    <div class="w-full" >
+      <Footer class="mt-12" />
     </div>
+    </div>
+    
 </template>
+
+<style scoped>
+/* Additional animations for page transitions */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.min-h-screen {
+    animation: fadeIn 0.6s ease-out;
+}
+</style>
