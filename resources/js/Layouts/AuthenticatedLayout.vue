@@ -6,6 +6,25 @@ import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import axios from "axios";
 
+// Responsive sidebar
+const isMobileView = ref(false);
+const checkScreenSize = () => {
+  isMobileView.value = window.innerWidth < 768; // Consider mobile under 768px
+  
+  // Auto close sidebar on mobile
+  if (isMobileView.value && isSidebarOpen.value) {
+    isSidebarOpen.value = false;
+  }
+  
+  // Auto open sidebar on desktop
+  if (!isMobileView.value && !isSidebarOpen.value && !userClosedSidebar.value) {
+    isSidebarOpen.value = true;
+  }
+};
+
+// Keep track of user's preference
+const userClosedSidebar = ref(false);
+
 // Sidebar toggle functionality
 const isSidebarOpen = ref(true);
 const isSidebarCollapsing = ref(false);
@@ -13,12 +32,14 @@ const isSidebarCollapsing = ref(false);
 const toggleSidebar = () => {
   if (isSidebarOpen.value) {
     isSidebarCollapsing.value = true;
+    userClosedSidebar.value = true;
     setTimeout(() => {
       isSidebarOpen.value = false;
       isSidebarCollapsing.value = false;
     }, 300);
   } else {
     isSidebarOpen.value = true;
+    userClosedSidebar.value = false;
   }
 };
 
@@ -47,7 +68,7 @@ const showingNavigationDropdown = ref(false);
 const navigateToRoute = (routeName) => router.visit(route(routeName));
 const logout = () => router.post(route('logout'));
 
-// Load categories on mount
+// Load categories on mount and setup responsive behavior
 onMounted(async () => {
   try {
     const response = await axios.get("/categories");
@@ -55,15 +76,24 @@ onMounted(async () => {
   } catch (error) {
     console.error("Erreur lors du chargement des catégories", error);
   }
+  
+  // Initial check
+  checkScreenSize();
+  
+  // Add resize listener
+  window.addEventListener('resize', checkScreenSize);
 });
 </script>
 
 <template>
   <div class="flex relative min-h-screen bg-gray-50">
-    <!-- Sidebar Toggle Button -->
+    <!-- Sidebar Toggle Button - Fixed positioning -->
     <button @click="toggleSidebar" 
       class="sidebar-toggle-button"
-      :class="{'sidebar-toggle-open': isSidebarOpen}"
+      :class="{
+        'sidebar-toggle-open': isSidebarOpen,
+        'sidebar-toggle-mobile': isMobileView
+      }"
       aria-label="Toggle sidebar">
       <div class="button-inner-container">
         <svg xmlns="http://www.w3.org/2000/svg" 
@@ -81,6 +111,8 @@ onMounted(async () => {
       :class="{
         'sidebar-closed': !isSidebarOpen,
         'sidebar-open': isSidebarOpen,
+        'mobile-sidebar-closed': !isSidebarOpen && isMobileView,
+        'mobile-sidebar-open': isSidebarOpen && isMobileView
       }">
       <div class="relative h-full bg-white p-4 overflow-y-auto shadow-xl sidebar-inner">
         <!-- Logo -->
@@ -90,7 +122,6 @@ onMounted(async () => {
             <div class="ml-3 sidebar-logo-text">
               <div class="text-lg font-bold text-sky-500">Braindcode</div>
               <div class="text-xs text-black" style="margin-left: 26px;">Startup Studio</div>
-
             </div>
           </Link>
         </div>
@@ -152,7 +183,7 @@ onMounted(async () => {
         </div>
         
         <!-- User Profile -->
-        <div class="absolute bottom-0 left-0 right-0 p-5   backdrop-blur-sm">
+        <div class="absolute bottom-0 left-0 right-0 p-5 backdrop-blur-sm">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 font-semibold mr-3">
@@ -189,8 +220,9 @@ onMounted(async () => {
     <!-- Main Content -->
     <div class="main-content flex-1 transition-all duration-300 ease-in-out"
       :class="{
-        'ml-64': isSidebarOpen,
-        'ml-16': !isSidebarOpen
+        'ml-64': isSidebarOpen && !isMobileView,
+        'ml-16': !isSidebarOpen && !isMobileView,
+        'ml-0': isMobileView
       }">
       <header class="sticky top-0 z-40 transition-all duration-300 bg-white/70 backdrop-blur shadow-sm">
         <slot name="header" />
@@ -294,27 +326,37 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-/* Sidebar toggle button */
+/* Sidebar toggle button - Fixed positioning */
 .sidebar-toggle-button {
   position: fixed;
-  top: 1.5rem;
-  left: 16rem; /* Should match expanded sidebar width */
+  top: 2.7rem;
   z-index: 1200;
   background: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
   width: 2rem;
   height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
   cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebar-closed + .sidebar-toggle-button {
-  left: 4rem; /* Should match collapsed sidebar width */
+/* For desktop - When sidebar is open */
+.sidebar-toggle-button {
+  left: 14.5rem; /* Aligned with expanded sidebar */
+}
+
+/* For desktop - When sidebar is closed */
+.sidebar-toggle-button:not(.sidebar-toggle-open) {
+  left: 3rem; /* Position when sidebar is collapsed */
+}
+
+/* For mobile devices */
+.sidebar-toggle-mobile {
+  left: 1rem !important; /* Force left position for mobile */
 }
 
 .button-inner-container {
@@ -354,5 +396,57 @@ onMounted(async () => {
 
 .sidebar {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* Media queries for responsive design */
+@media (max-width: 767px) {
+  /* Mobile sidebar */
+  .mobile-sidebar-open {
+    width: 16rem; /* Full width on mobile */
+    transform: translateX(0);
+  }
+  
+  .mobile-sidebar-closed {
+    width: 16rem; /* Keep width but move offscreen */
+    transform: translateX(-100%);
+  }
+  
+  /* Add a backdrop when sidebar is open on mobile */
+  .mobile-sidebar-open::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  /* Tablet adjustments */
+  .sidebar-open {
+    width: 14rem;
+  }
+  
+  .sidebar-toggle-button {
+    left: 12.5rem;
+  }
+  
+  .sidebar-toggle-button:not(.sidebar-toggle-open) {
+    left: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Desktop adjustments */
+  .sidebar-toggle-button {
+    left: 14.5rem;
+  }
+  
+  .sidebar-toggle-button:not(.sidebar-toggle-open) {
+    left: 3rem;
+  }
 }
 </style>

@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('titre')->nullable();
             $table->double('prix')->nullable();
             $table->boolean('estcertifiante')->nullable();
+            $table->string('description')->nullable();
+            $table->string('duree')->nullable();
             $table->string('image_formation')->nullable(); 
             $table->string('est_valide')->default("EnAttente"); // Nouvelle colonne
             $table->boolean('est_publiee')->default(false); // Pour contrôler la publication

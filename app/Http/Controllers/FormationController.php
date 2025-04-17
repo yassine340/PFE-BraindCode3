@@ -14,9 +14,11 @@ class FormationController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Formation::select('id', 'titre', 'image_formation', 'est_valide', 'est_publiee', 'user_id')
+        $query = Formation::select('id', 'titre', 'image_formation', 'est_valide', 'est_publiee', 'user_id','prix', 'estcertifiante', 'category_id', 'created_at','description', 'duree')
                            ->with('user:id,first_name,last_name,email') // Chargement de l'utilisateur (formateur)
-                           ->where('est_valide', 'Validée'); // Par défaut, ne montrer que les formations validées
+                           ->withCount('modules')
+                           ->where('est_valide', 'Validée') // Par défaut, ne montrer que les formations validées
+                           ->where('est_publiee', 1);
         
         $formations = $query->get();
         
@@ -43,6 +45,9 @@ class FormationController extends Controller
                 'titre' => 'required|string|max:255',
                 'prix' => 'required|numeric',
                 'estcertifiante' => 'required|boolean',
+                'description' => 'nullable|string',
+                'duree' => 'nullable|string',
+                'est_publiee' => 'nullable|boolean',
                 'image_formation' => 'nullable|image|mimes:jpeg,png,jpg,gif',
                 'category_id' => 'required|exists:categories,id',
                 'modules.*.titre' => 'required|string|max:255',
@@ -73,10 +78,12 @@ class FormationController extends Controller
                 'titre' => $request->titre,
                 'prix' => $request->prix,
                 'estcertifiante' => $request->estcertifiante,
+                'description' => $request->description,
+                'duree' => $request->duree,
+                'est_publiee' => $request->est_publiee,
                 'image_formation' => $imagePath,
                 'category_id' => $request->category_id,
                 'user_id' => auth()->id(), // ID de l'utilisateur connecté (formateur)
-                'est_publiee' => false // Non publiée par défaut
             ]);
 
             // Create modules, lessons, quizzes, questions, and answers
@@ -185,20 +192,6 @@ class FormationController extends Controller
         // Récupérer le module et la leçon actuels
         $currentModule = $modules[$currentModuleIndex] ?? null;
         $currentLecon = $currentModule->lecons[$currentLeconIndex] ?? null;
-
-        // Vérifier si l'utilisateur peut voir cette formation
-        $canView = true;
-        if (auth()->user()->role === 'user' || auth()->user()->role === 'startup') {
-            $canView = $formation->est_valide && $formation->est_publiee;
-        } else if (auth()->user()->role === 'formateur') {
-            $canView = $formation->user_id === auth()->id();
-        }
-
-        if (!$canView) {
-            return redirect()->route('formations.index')
-                           ->with('error', 'Vous n\'êtes pas autorisé à accéder à cette formation.');
-        }
-
         return Inertia::render('Formations/Show', [
             'formation' => $formation,
             'currentModule' => $currentModule,

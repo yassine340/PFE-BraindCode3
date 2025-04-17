@@ -15,6 +15,8 @@ class Formation extends Model
         'estcertifiante',
         'image_formation',
         'category_id',
+        'description',
+        'duree',
         'est_valide', // Ajout du nouveau champ
         'est_publiee', // Ajout du champ de publication
         'user_id'  // Ajout du champ user_id pour le formateur
