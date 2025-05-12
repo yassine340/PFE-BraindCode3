@@ -37,7 +37,6 @@ const submit = () => {
 <template>
     <GuestLayout>
         <Head title="Log in" />
-
         <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden md:max-w-lg ">
             <div class="md:flex">
                 <div class="p-8 w-full">

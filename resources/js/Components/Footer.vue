@@ -33,9 +33,9 @@
       <div>
         <h3 class="font-bold mb-3">Liens utiles</h3>
         <ul class="space-y-2">
-          <li><a href="#" class="hover:underline">Startup</a></li>
-          <li><a href="#" class="hover:underline">Investisseur</a></li>
-          <li><a href="#" class="hover:underline">Coach</a></li>
+          <li><a href="/startup" class="hover:underline">Startup</a></li>
+          <li><a href="/startup-investment" class="hover:underline">Investisseur</a></li>
+          <li><a href="/coach" class="hover:underline">Coach</a></li>
           <li><a href="#" class="hover:underline">À propos</a></li>
         </ul>
       </div>
@@ -44,8 +44,8 @@
       <div>
         <h3 class="font-bold mb-3">Soutien</h3>
         <ul class="space-y-2">
-          <li><a href="#" class="hover:underline">Contact</a></li>
-          <li><a href="#" class="hover:underline">FAQ</a></li>
+          <li><a href="/contact" class="hover:underline">Contact</a></li>
+          <li><a href="/faq" class="hover:underline">FAQ</a></li>
           <li><a href="#" class="hover:underline">Tutoriel</a></li>
           <li><a href="#" class="hover:underline">Politique de confidentialités</a></li>
         </ul>

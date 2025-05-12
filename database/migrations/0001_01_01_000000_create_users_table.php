@@ -34,6 +34,7 @@ return new class extends Migration
 
             // Ajouter un champ de statut pour la validation des formateurs
             $table->enum('status', ['en_attente', 'valide', 'rejete'])->default('en_attente')->nullable(); // Défaut à "en_attente" pour les formateurs en attente de validation
+            $table->unsignedBigInteger('startup_id')->nullable()->after('role');
 
             $table->rememberToken();
             $table->timestamps();

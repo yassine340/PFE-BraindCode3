@@ -107,18 +107,23 @@
                     </div>
                   </div>
                 </div>
-                <!--duree-->
-                <div>
-                  <label for="duree" class="block text-sm font-medium text-gray-700 mb-1">Durée estimée (en heures)</label>
-                  <input 
-                    type="number" 
-                    id="duree" 
-                    v-model="duree" 
-                    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
-                    placeholder="Ex: 10" 
-                    required 
-                  />
-                </div>
+               <!-- Durée (en jours) -->
+<div>
+  <label for="duree" class="block text-sm font-medium text-gray-700 mb-1">
+    Durée estimée (en jours)
+  </label>
+  <input 
+    type="number" 
+    id="duree" 
+    v-model="duree" 
+    step="any"
+    min="0"
+    class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all" 
+    placeholder="Ex: 1.5 pour 1 jour et demi" 
+    required 
+  />
+</div>
+
                 <!-- Description de la formation -->
                 <div class="col-span-2">
                   <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description de la formation</label>

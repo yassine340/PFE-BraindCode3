@@ -65,6 +65,12 @@ const user = computed(() => page.props.auth.user);
 const role = computed(() => user.value?.role || 'user');
 const showingNavigationDropdown = ref(false);
 
+// Fonction de gestion d'erreur pour l'image de profil
+const handleImageError = (event) => {
+  console.warn('Erreur de chargement de l\'image de profil');
+  event.target.src = '/images/default-avatar.jpg';
+};
+
 const navigateToRoute = (routeName) => router.visit(route(routeName));
 const logout = () => router.post(route('logout'));
 
@@ -82,6 +88,11 @@ onMounted(async () => {
   
   // Add resize listener
   window.addEventListener('resize', checkScreenSize);
+
+  // Log pour vérifier l'URL de l'image de profil
+  if (user.value?.profile_image_url) {
+    console.log('URL de l\'image de profil:', user.value.profile_image_url);
+  }
 });
 </script>
 
@@ -117,7 +128,7 @@ onMounted(async () => {
       <div class="relative h-full bg-white p-4 overflow-y-auto shadow-xl sidebar-inner">
         <!-- Logo -->
         <div class="flex items-center mb-8 px-2">
-          <Link :href="route('dashboard')" class="flex items-center">
+          <Link :href="('/')" class="flex items-center">
             <img src="/image/logos/Icon_BraindCode_Blue.png" class="sidebar-logo-icon h-8 w-8" alt="Logo" />
             <div class="ml-3 sidebar-logo-text">
               <div class="text-lg font-bold text-sky-500">Braindcode</div>
@@ -146,13 +157,51 @@ onMounted(async () => {
             </svg>
             Mes statistiques
           </NavLink>
-          
+
+          <NavLink :href="route('mes-formations-payees')" :active="route().current('mes-formations-payees')"
+          class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+          :class="{ 'bg-blue-600/20 text-blue-300': route().current('mes-formations-payees') }">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" :class="{ 'text-blue-400': route().current('mes-formations-payees') }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          Mes Formations Payées
+        </NavLink>
+
           <!-- Formateur Links -->
           <template v-if="role === 'formateur'">
             <NavLink v-for="link in [
               { route: 'DashboardFormateur', label: 'Dashboard Formateur', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
-              { route: 'upload.videos', label: 'Upload Vidéos', icon: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' },
-              { route: 'afficher.videos', label: 'Voir Vidéos', icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
+              {route:'formateurs.my-formations', label: 'Mes Formations', icon: 'M3 10l4-4m0 0l4 4m-4-4v18m8-6l4-4m0 0l-4-4m4 4H5' },
+            ]"
+            :key="link.route" :href="route(link.route)" :active="route().current(link.route)"
+            class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+            :class="{ 'bg-blue-600/20 text-blue-300': route().current(link.route) }">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" :class="{ 'text-blue-400': route().current(link.route) }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="link.icon" />
+              </svg>
+              {{ link.label }}
+            </NavLink>
+          </template>
+
+          <!-- worker Links -->
+          <template v-if="role === 'worker'">
+            <NavLink v-for="link in [
+              {route:'mes-formations-payees-startup', label: 'le Formations de startup', icon: 'M3 10l4-4m0 0l4 4m-4-4v18m8-6l4-4m0 0l-4-4m4 4H5' },
+            ]"
+            :key="link.route" :href="route(link.route)" :active="route().current(link.route)"
+            class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
+            :class="{ 'bg-blue-600/20 text-blue-300': route().current(link.route) }">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-3" :class="{ 'text-blue-400': route().current(link.route) }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="link.icon" />
+              </svg>
+              {{ link.label }}
+            </NavLink>
+          </template>
+
+          <!-- Apprenant Links -->
+          <template v-else-if="role === 'startup'">
+            <NavLink v-for="link in [
+              { route: 'Dashboardstartup', label: 'Dashboard startup', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
             ]"
             :key="link.route" :href="route(link.route)" :active="route().current(link.route)"
             class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
@@ -167,9 +216,10 @@ onMounted(async () => {
           <!-- Admin Links -->
           <template v-else-if="role === 'admin'">
             <NavLink v-for="link in [
-              { route: 'DashboardAdmin', label: 'Dashboard Admin', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
+              { route: 'dashboardAdmin', label: 'Dashboard Admin', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z M14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6z M4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z M14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
               { route: 'formateur.en.attente', label: 'Formateurs en attente', icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z' },
-              { route: 'formateurs.index', label: 'Formateurs', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' }
+              { route: 'formateurs.index', label: 'Formateurs', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+              {route:'formateurs.my-formations', label: 'Mes Formations', icon: 'M3 10l4-4m0 0l4 4m-4-4v18m8-6l4-4m0 0l-4-4m4 4H5' }
             ]"
             :key="link.route" :href="route(link.route)" :active="route().current(link.route)"
             class="flex items-center px-4 py-3 hover:bg-gray-700/50 rounded-xl transition-all duration-200 group"
@@ -182,13 +232,19 @@ onMounted(async () => {
           </template>
         </div>
         
-        <!-- User Profile -->
+        <!-- User Profile - MODIFIÉ POUR IMAGES S3 -->
         <div class="absolute bottom-0 left-0 right-0 p-5 backdrop-blur-sm">
           <div class="flex items-center justify-between">
             <div class="flex items-center">
               <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-300 font-semibold mr-3">
-                <div v-if="user.profile_image" class="flex-shrink-0 h-10 w-10">
-                  <img class="h-10 w-10 rounded-full" :src="user.profile_image" alt="" />
+                <!-- Utiliser profile_image_url au lieu de profile_image -->
+                <div v-if="user.profile_image_url" class="flex-shrink-0 h-10 w-10">
+                  <img 
+                    class="h-10 w-10 rounded-full object-cover" 
+                    :src="user.profile_image_url" 
+                    :alt="user?.first_name || 'Utilisateur'" 
+                    @error="handleImageError"
+                  />
                 </div>
                 <template v-else>
                   {{ user?.first_name?.charAt(0) || 'U' }}

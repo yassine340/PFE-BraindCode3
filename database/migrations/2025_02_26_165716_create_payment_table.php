@@ -22,7 +22,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2); // Changed from 'montant' to match controller
             $table->string('currency'); // Added to match controller
             $table->string('stripe_payment_intent_id')->nullable();
-            
+            $table->decimal('coach_amount', 10, 2)->nullable()->after('amount');
             // Add PayPal specific fields
             $table->string('paypal_order_id')->nullable();
             $table->string('paypal_capture_id')->nullable();
@@ -34,6 +34,8 @@ return new class extends Migration
         });
     }
 
+    
+
     /**
      * Reverse the migrations.
      */
@@ -44,6 +46,7 @@ return new class extends Migration
             $table->dropColumn('paypal_order_id');
             $table->dropColumn('paypal_capture_id');
             $table->dropColumn('payment_method');
+            $table->dropColumn('coach_amount');
             
             // Revert stripe_payment_intent_id to non-nullable
             $table->string('stripe_payment_intent_id')->nullable(false)->change();

@@ -19,7 +19,11 @@ class VerifyEmailController extends Controller
             // Si l'email est déjà vérifié, redirigez vers le tableau de bord approprié
             if ($request->user()->role === 'formateur') {
                 return redirect()->route('DashboardFormateur', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
-            } elseif ($request->user()->role === 'startup' || $request->user()->role === 'user') {
+            } elseif ($request->user()->role === 'user') {
+                return redirect()->route('dashboard', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
+            }elseif ($request->user()->role === 'startup') {
+                return redirect()->route('Dashboardstartup', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
+            }elseif( $request->user()->role === 'worker') {
                 return redirect()->route('dashboard', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
             }
         }
@@ -32,7 +36,11 @@ class VerifyEmailController extends Controller
         // Redirigez l'utilisateur après la vérification de l'email
         if ($request->user()->role === 'formateur') {
             return redirect()->route('DashboardFormateur', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
-        } elseif ($request->user()->role === 'startup' || $request->user()->role === 'user') {
+        } elseif ($request->user()->role === 'user') {
+            return redirect()->route('dashboard', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
+        }elseif ($request->user()->role === 'startup') {
+            return redirect()->route('Dashboardstartup', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
+        }elseif( $request->user()->role === 'worker') {
             return redirect()->route('dashboard', ['verified' => 1]);  // Ajouter le paramètre 'verified=1'
         }
 

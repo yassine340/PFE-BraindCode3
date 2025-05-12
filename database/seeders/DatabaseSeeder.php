@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'fakhri.chargui37@gmail.com',
             'password' => bcrypt('20855016'),
             'phone' => '123456789',
-            'sratus' => 'valide',
+            'status' => 'valide',
             'role'=>'admin'
         ]);
 

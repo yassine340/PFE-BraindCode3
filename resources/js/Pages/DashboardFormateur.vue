@@ -44,9 +44,9 @@
   <script setup>
   import { Head } from '@inertiajs/vue3';
   import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-  import DashboardHeader from '@/components/DashboardFormateur/DashboardHeader.vue';
-  import MetricCard from '@/components/DashboardFormateur/MetricCard.vue';
-  import StartupProgress from '@/components/DashboardFormateur/StartupProgress.vue';
-  import GainsExpensesChart from '@/components/DashboardFormateur/GainsExpensesChart.vue';
-  import ActionButtons from '@/components/DashboardFormateur/ActionButtons.vue';
+  import DashboardHeader from '@/Components/DashboardFormateur/DashboardHeader.vue';
+  import MetricCard from '@/Components/DashboardFormateur/MetricCard.vue';
+  import StartupProgress from '@/Components/DashboardFormateur/StartupProgress.vue';
+  import GainsExpensesChart from '@/Components/DashboardFormateur/GainsExpensesChart.vue';
+  import ActionButtons from '@/Components/DashboardFormateur/ActionButtons.vue';
   </script>

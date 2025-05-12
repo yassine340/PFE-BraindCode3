@@ -55,33 +55,38 @@
             </Dropdown>
           </div>
         </div>
-
-        <!-- Admin "Add course" button -->
-        <div v-if="role !== 'user' && role !== 'startup'" class="mb-10 text-center">
-          <Link href="/formations/create" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-semibold rounded-lg shadow-md">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Ajouter une formation
-          </Link>
-        </div>
-
         <!-- Course grid -->
         <div class="grid lg:grid-cols-3 md:grid-cols-2 grid-cols-1 gap-8">
           <div v-for="formation in formations" :key="formation.id" class="bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full">
-            <!-- Course image -->
+            <!-- Course image - MODIFIÉ POUR S3 -->
             <div class="relative overflow-hidden h-48">
-              <img v-if="formation.image_formation" :src="`/storage/${formation.image_formation}`" alt="Image formation" class="w-full h-full object-cover">
+              <!-- Utilisation de image_url au lieu de image_formation -->
+              <img 
+                v-if="formation.image_url" 
+                :src="formation.image_url" 
+                :alt="formation.titre || 'Image formation'" 
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+              >
               <div v-else class="w-full h-full bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-white opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
               </div>
-              <Link :href="`/formations/${formation.id}`" class="block">
-              <div class="absolute top-3 right-3 bg-white bg-opacity-90 rounded-full py-1 px-3 text-sm font-semibold text-indigo-600">
-                {{ formatDateTime(formation.created_at) }}
+              
+              <!-- Badge S3 (optionnel) -->
+              <div 
+                v-if="isS3Image(formation)" 
+                class="absolute top-2 left-2 bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-full"
+              >
+                S3
               </div>
-            </Link>
+              
+              <Link :href="`/formations/${formation.id}`" class="block">
+                <div class="absolute top-3 right-3 bg-white bg-opacity-90 rounded-full py-1 px-3 text-sm font-semibold text-indigo-600">
+                  {{ formatDateTime(formation.created_at) }}
+                </div>
+              </Link>
             </div>
             <div class="flex-1 p-6 flex flex-col">
               <Link :href="`/formations/${formation.id}`" class="block">
@@ -164,6 +169,7 @@ interface Formation {
   description: string;
   created_at: string;
   image_formation: string | null;
+  image_url: string | null; // Ajouté pour S3
   duree: string;
   modules_count: number;
 }
@@ -183,6 +189,19 @@ const formations = ref(props.formations);
 const categories = ref<Category[]>([]);
 const selectedCategory = ref("");
 const selectedCategoryName = ref("");
+
+// Gestionnaire d'erreur d'image
+const handleImageError = (event) => {
+  console.warn(`Erreur de chargement de l'image pour ${event.target.alt}`);
+  event.target.src = '/images/placeholder-formation.jpg';
+};
+
+// Méthode pour détecter si une image provient de S3
+const isS3Image = (formation) => {
+  return formation.image_url && 
+         (formation.image_url.includes('amazonaws.com') || 
+          formation.image_url.includes('s3.'));
+};
 
 watch(() => props.formations, newVal => formations.value = newVal || []);
 
@@ -211,6 +230,21 @@ onMounted(async () => {
   try {
     const response = await axios.get("/categories");
     categories.value = response.data;
+    
+    // Logs de diagnostic pour les images S3
+    console.group('📊 DIAGNOSTIC FORMATIONS LISTE');
+    console.log('Nombre de formations:', formations.value.length);
+    
+    // Compter les images S3
+    const s3Images = formations.value.filter(f => isS3Image(f));
+    console.log('Images S3:', s3Images.length);
+    console.log('Images locales/autres:', formations.value.length - s3Images.length);
+    
+    if (s3Images.length > 0) {
+      console.log('Exemple URL S3:', s3Images[0].image_url);
+    }
+    
+    console.groupEnd();
   } catch (error) {
     console.error("Erreur lors du chargement des catégories", error);
   }

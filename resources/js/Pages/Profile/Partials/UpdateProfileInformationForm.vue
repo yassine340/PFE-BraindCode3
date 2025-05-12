@@ -17,13 +17,21 @@ defineProps({
 
 const user = usePage().props.auth.user;
 const formFocus = ref(null);
-// Prévisualisation de l'image
-const imagePreview = ref(user.profile_image || null);
+
+// Modifié pour utiliser profile_image_url au lieu de profile_image
+const imagePreview = ref(user.profile_image_url || null);
 
 // Affichage des informations de débogage au chargement
+// Au début du script, juste après la définition des variables
 onMounted(() => {
-    console.log('Informations utilisateur:', user);
-    console.log('Image de profil actuelle:', user.profile_image);
+    console.group('🔍 DONNÉES INITIALES');
+    console.log('Utilisateur complet:', user);
+    console.log('Image path brut:', user.profile_image);
+    console.log('URL de l\'image:', user.profile_image_url);
+    console.log('Type de la valeur profile_image_url:', typeof user.profile_image_url);
+    // Vérifie si l'accesseur existe
+    console.log('Accesseur profile_image_url existe:', 'profile_image_url' in user);
+    console.groupEnd();
 });
 
 const form = useForm({
@@ -36,17 +44,47 @@ const form = useForm({
 // Fonction améliorée pour gérer la prévisualisation de l'image
 const handleImageChange = (e) => {
     const file = e.target.files[0];
+    console.group('📸 SÉLECTION D\'IMAGE');
     console.log('Fichier sélectionné:', file);
+    console.log('Taille:', file ? `${(file.size / 1024).toFixed(2)} Ko` : 'N/A');
+    console.log('Type MIME:', file ? file.type : 'N/A');
     
     if (file) {
         form.profile_image = file;
         imagePreview.value = URL.createObjectURL(file);
+        console.log('URL de prévisualisation créée:', imagePreview.value);
         console.log('Image ajoutée au formulaire:', form.profile_image);
     }
+    console.groupEnd();
 };
 
 // Fonction dédiée pour la soumission du formulaire
 const submitForm = () => {
+    console.group('📤 SOUMISSION DU FORMULAIRE');
+    console.log('Données du formulaire avant soumission:', {
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        profile_image: form.profile_image ? `Fichier (${form.profile_image.name})` : null
+    });
+
+    // Vérifier si le formulaire contient bien l'image
+    if (form.profile_image) {
+        console.log('✓ Image présente dans le formulaire');
+        // Tester la lecture du fichier
+        try {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                console.log('✓ Image lisible, taille en base64:', e.target.result.length);
+            };
+            reader.readAsDataURL(form.profile_image);
+        } catch (error) {
+            console.error('❌ Erreur de lecture du fichier:', error);
+        }
+    } else {
+        console.log('❌ Aucune image dans le formulaire');
+    }
+    
     // Créer un nouvel objet form qui utilise les valeurs actuelles
     let submitForm = useForm({
         _method: 'PATCH',
@@ -56,12 +94,18 @@ const submitForm = () => {
         profile_image: form.profile_image
     });
     
+    console.log('FormData créé et prêt pour soumission');
+    console.groupEnd();
+    
     // Utiliser post() au lieu de patch() avec le nouvel objet
     submitForm.post(route('profile.update'), {
         forceFormData: true,
         preserveScroll: true,
         onError: (errors) => {
-            console.error('Erreurs de validation:', errors);
+            console.group('❌ ERREURS DE VALIDATION');
+            console.error('Détails des erreurs:', errors);
+            console.groupEnd();
+            
             // Copier les erreurs vers l'objet form original pour l'affichage
             form.clearErrors();
             Object.keys(errors).forEach(key => {
@@ -69,9 +113,13 @@ const submitForm = () => {
             });
         },
         onSuccess: () => {
+            console.group('✅ SUCCÈS');
             console.log('Profil mis à jour avec succès');
+            console.log('Image censée être stockée sur S3');
+            console.groupEnd();
+            
             form.reset('profile_image');
-            // Facultatif: recharger pour voir les changements
+            // Recharger pour voir les changements avec la nouvelle URL S3
             window.location.reload();
         }
     });
@@ -84,7 +132,13 @@ const submitForm = () => {
             <h2 class="profile-title">Votre Profil</h2>
             <div class="profile-decoration"></div>
         </div>
-
+<!-- Ajouter juste après l'ouverture de la balise template -->
+<div style="display:none" id="s3-debug-info" 
+    data-has-url-accessor="${'profile_image_url' in user}" 
+    data-image-path="${user.profile_image || 'null'}"
+    data-php-version="${user.php_version || 'unknown'}"
+>
+</div>
         <!-- Utiliser la nouvelle fonction submitForm et ajouter enctype -->
         <form @submit.prevent="submitForm" class="profile-form" enctype="multipart/form-data">
             <!-- Section d'image de profil -->

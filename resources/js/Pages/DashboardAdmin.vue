@@ -217,7 +217,13 @@ const revenueIcon = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text
                 </Link>
               </template>
             </StatCard>
-            <StatCard title="Revenus" :value="`${stats.revenus}€`" :iconHtml="revenueIcon" color="green" trend="+23% ce mois" />
+            <StatCard title="Revenus" :value="`${stats.revenus}€`" :iconHtml="revenueIcon" color="green" >
+              <template #extra>
+                <Link href="/PaymentTransactionsAdmin" class="mt-2 block text-green-600 text-sm font-medium hover:underline">
+                  Voir les transactions →
+                </Link>
+              </template>
+            </StatCard>
           </div>
 
           <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
